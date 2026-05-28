@@ -101,16 +101,26 @@ module.exports = async function handler(req, res) {
 
     const email = profile.email.toLowerCase();
 
-    // Find or create user
+    // Find or create user (upsert-safe)
     let rows = await sql`select id from users where email = ${email}`;
     let userId;
     if (rows.length) {
       userId = rows[0].id;
     } else {
-      const [newUser] = await sql`
-        insert into users (email, password_hash) values (${email}, ${null}) returning id`;
-      userId = newUser.id;
-      await sql`insert into user_profiles (user_id) values (${userId}) on conflict do nothing`;
+      try {
+        const [newUser] = await sql`
+          insert into users (email, password_hash) values (${email}, ${null}) returning id`;
+        userId = newUser.id;
+        await sql`insert into user_profiles (user_id) values (${userId}) on conflict do nothing`;
+      } catch (e) {
+        if (e.code === '23505') {
+          // Another request beat us — just fetch the existing row
+          const [existing] = await sql`select id from users where email = ${email}`;
+          userId = existing.id;
+        } else {
+          throw e;
+        }
+      }
     }
 
     const token = await signSession(userId, email);
