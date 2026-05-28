@@ -41,7 +41,7 @@ module.exports = async function handler(req, res) {
 
     for (let i = 0; i < (exercises ?? []).length; i++) {
       const ex = exercises[i];
-      const [weRow] = await sql`
+      const { rows: [weRow] } = await sql`
         insert into workout_exercises (workout_id, exercise_name, rest_seconds, sort_order)
         values (${id}, ${ex.name}, ${ex.restSeconds ?? 90}, ${i})
         returning id`;

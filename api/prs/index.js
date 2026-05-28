@@ -6,7 +6,7 @@ module.exports = async function handler(req, res) {
   if (!session) return;
 
   if (req.method === 'GET') {
-    const rows = await sql`
+    const { rows } = await sql`
       select exercise_name, weight, reps, achieved_at
       from personal_records where user_id = ${session.uid}`;
     // Return as { exerciseName: { weight, reps, date } } to match existing frontend shape

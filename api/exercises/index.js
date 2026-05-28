@@ -6,7 +6,7 @@ module.exports = async function handler(req, res) {
   if (!session) return;
 
   if (req.method === 'GET') {
-    const rows = await sql`
+    const { rows } = await sql`
       select id, user_id, name, muscle, description, is_custom
       from exercises
       where user_id = ${session.uid} or user_id is null

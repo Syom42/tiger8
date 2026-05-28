@@ -6,7 +6,7 @@ module.exports = async function handler(req, res) {
   if (!session) return;
 
   if (req.method === 'GET') {
-    const rows = await sql`
+    const { rows } = await sql`
       select id, weight, date, note
       from weight_log where user_id = ${session.uid}
       order by date asc`;
@@ -16,7 +16,7 @@ module.exports = async function handler(req, res) {
   if (req.method === 'POST') {
     const { weight, date, note } = await readJsonBody(req);
     if (!weight || !date) return res.status(400).json({ error: 'weight and date required' });
-    const [row] = await sql`
+    const { rows: [row] } = await sql`
       insert into weight_log (user_id, weight, date, note)
       values (${session.uid}, ${weight}, ${date}, ${note ?? null})
       returning id`;

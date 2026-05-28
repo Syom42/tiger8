@@ -6,7 +6,7 @@ module.exports = async function handler(req, res) {
   if (!session) return;
 
   if (req.method === 'GET') {
-    const rows = await sql`
+    const { rows } = await sql`
       select name, age, height, goal, joined_at
       from user_profiles where user_id = ${session.uid}`;
     return res.status(200).json(rows[0] ?? {});
