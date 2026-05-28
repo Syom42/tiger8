@@ -43,17 +43,18 @@ function renderPlanExList() {
 function savePlan() {
   const name = document.getElementById('planName').value.trim();
   if(!name) return;
+  const desc = document.getElementById('planDesc').value;
+  const exercises = [...planExList_arr];
   if (editingPlanId) {
-    const plan = DB.plans.find(p => p.id === editingPlanId);
-    if (plan) {
-      plan.name = name;
-      plan.desc = document.getElementById('planDesc').value;
-      plan.exercises = [...planExList_arr];
-      saveDB();
-    }
+    const eid = editingPlanId;
+    db.update(d => {
+      const plan = d.plans.find(p => p.id === eid);
+      if (plan) { plan.name = name; plan.desc = desc; plan.exercises = exercises; }
+    });
   } else {
-    DB.plans.push({ id:Date.now(), name, desc:document.getElementById('planDesc').value, exercises:[...planExList_arr] });
-    saveDB();
+    db.update(d => {
+      d.plans.push({ id: Date.now(), name, desc, exercises });
+    });
   }
   editingPlanId = null;
   planExList_arr = [];
@@ -110,7 +111,7 @@ function startFromPlan(id) {
       return {
         name: e.name,
         restSeconds: e.restSeconds,
-        sets: [{reps:'',weight:'',done:false},{reps:'',weight:'',done:false},{reps:'',weight:'',done:false}]
+        sets: getLastUsedSets(e.name)
       };
     })
   };
@@ -130,8 +131,8 @@ function deletePlan(id) {
     buttons: [
       { label: 'ביטול' },
       { label: 'מחק', primary: true, action: () => {
-        DB.plans = DB.plans.filter(p=>p.id!==id);
-        saveDB(); renderPlans();
+        db.update(d => { d.plans = d.plans.filter(p => p.id !== id); });
+        renderPlans();
         showToast('התוכנית נמחקה');
       }}
     ]

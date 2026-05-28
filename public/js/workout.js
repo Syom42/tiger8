@@ -6,6 +6,17 @@ let workoutStart = null;
 let newWorkoutExercises = [];
 let selectedMuscles = [];
 
+// Returns pre-filled sets from the last time this exercise was done, or empty sets.
+function getLastUsedSets(exName, defaultCount = 3) {
+  for (let i = DB.workouts.length - 1; i >= 0; i--) {
+    const ex = DB.workouts[i].exercises.find(e => e.name === exName);
+    if (ex && ex.sets && ex.sets.length) {
+      return ex.sets.map(s => ({ weight: s.weight || '', reps: s.reps || '', done: false }));
+    }
+  }
+  return Array.from({ length: defaultCount }, () => ({ weight: '', reps: '', done: false }));
+}
+
 function toggleMuscle(el, muscle) {
   el.classList.toggle('active');
   if(el.classList.contains('active')) selectedMuscles.push(muscle);
@@ -14,7 +25,7 @@ function toggleMuscle(el, muscle) {
 
 function addExerciseToNewByName(name) {
   if (!name) return;
-  newWorkoutExercises.push({ name, restSeconds: 90, sets:[{reps:'',weight:'',done:false},{reps:'',weight:'',done:false},{reps:'',weight:'',done:false}] });
+  newWorkoutExercises.push({ name, restSeconds: 90, sets: getLastUsedSets(name) });
   renderNewExList();
 }
 
@@ -53,7 +64,7 @@ function startNewWorkout() {
     exercises: newWorkoutExercises.map(ex => ({
       name: ex.name,
       restSeconds: ex.restSeconds || 90,
-      sets: [{reps:'',weight:'',done:false},{reps:'',weight:'',done:false},{reps:'',weight:'',done:false}]
+      sets: getLastUsedSets(ex.name)
     }))
   };
   workoutStart = Date.now();
@@ -158,7 +169,7 @@ function addExerciseDuringWorkout() {
   if(!inp) return;
   const name = inp.value.trim();
   if(!name) return;
-  activeWorkout.exercises.push({ name, restSeconds: 90, sets:[{reps:'',weight:'',done:false},{reps:'',weight:'',done:false},{reps:'',weight:'',done:false}] });
+  activeWorkout.exercises.push({ name, restSeconds: 90, sets: getLastUsedSets(name) });
   localStorage.setItem('ironlog_active_workout', JSON.stringify(activeWorkout));
   renderWorkoutScreen();
   showToast('תרגיל נוסף לאימון ✅');
@@ -198,9 +209,19 @@ function finishWorkout() {
     duration,
     exercises: activeWorkout.exercises
   };
-  DB.workouts.push(workout);
-  updatePRs(workout);
-  saveDB();
+  db.update(d => {
+    d.workouts.push(workout);
+    // Update PRs inside same transaction so both sync together
+    workout.exercises.forEach(ex => {
+      ex.sets.forEach(set => {
+        if(!set.weight || !set.reps) return;
+        const w = parseFloat(set.weight), r = parseInt(set.reps);
+        if(!d.prs[ex.name] || w > d.prs[ex.name].weight || (w===d.prs[ex.name].weight && r > d.prs[ex.name].reps)) {
+          d.prs[ex.name] = { weight: w, reps: r, date: workout.date };
+        }
+      });
+    });
+  });
   activeWorkout = null; workoutStart = null;
   localStorage.removeItem('ironlog_workout_start');
   localStorage.removeItem('ironlog_active_workout');
@@ -230,17 +251,7 @@ function cancelWorkout() {
   });
 }
 
-function updatePRs(workout) {
-  workout.exercises.forEach(ex => {
-    ex.sets.forEach(set => {
-      if(!set.weight || !set.reps) return;
-      const w = parseFloat(set.weight), r = parseInt(set.reps);
-      if(!DB.prs[ex.name] || w > DB.prs[ex.name].weight || (w===DB.prs[ex.name].weight && r>DB.prs[ex.name].reps)) {
-        DB.prs[ex.name] = { weight: w, reps: r, date: workout.date };
-      }
-    });
-  });
-}
+// updatePRs is now handled inside db.update() within finishWorkout.
 
 function renderStartChoicePlans() {
   const section = document.getElementById('startChoicePlans');

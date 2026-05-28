@@ -104,7 +104,10 @@ function renderWeekCalendar() {
       el.appendChild(planTag);
       if (matchingPlan && matchingPlan.exercises.length) {
         const exPreview = document.createElement('div');
-        exPreview.textContent = matchingPlan.exercises.slice(0,2).map(e => e.length > 5 ? e.substring(0,5) + '…' : e).join(', ');
+        exPreview.textContent = matchingPlan.exercises.slice(0,2).map(e => {
+          const n = typeof e === 'string' ? e : (e.name || '');
+          return n.length > 5 ? n.substring(0,5) + '…' : n;
+        }).join(', ');
         exPreview.style.cssText = 'font-size:9px;color:var(--text3);text-align:center;max-width:100%;overflow:hidden;line-height:1.2';
         el.appendChild(exPreview);
       }
@@ -123,7 +126,7 @@ function showDayPlanInfo(plan, date) {
   showDialog({
     icon: '📋',
     title: plan.name,
-    msg: dateStr + '\n' + plan.exercises.join(' • '),
+    msg: dateStr + '\n' + plan.exercises.map(e => typeof e === 'string' ? e : e.name).join(' • '),
     buttons: [
       { label: 'סגור' },
       { label: '▶ התחל אימון', primary: true, action: () => startFromPlan(plan.id) }

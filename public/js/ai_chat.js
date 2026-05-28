@@ -103,7 +103,7 @@ function buildUserContext() {
     : DB.weightLog.length === 1 ? DB.weightLog[0].weight + 'kg' : 'לא נרשם';
 
   // Saved plans
-  const savedPlans = DB.plans.map(p => `${p.name}: ${p.exercises.join(', ')}`).join('\n    ') || 'אין';
+  const savedPlans = DB.plans.map(p => `${p.name}: ${(p.exercises || []).map(e => e.name || e).join(', ')}`).join('\n    ') || 'אין';
 
   return `
 === נתוני משתמש ===

@@ -3,9 +3,11 @@
 function saveWeight() {
   const w = parseFloat(document.getElementById('weightInput').value);
   if(!w||w<20||w>300) { showToast('הזן משקל תקין (20-300 ק"ג)', 'error'); return; }
-  DB.weightLog.push({ weight:w, date:document.getElementById('weightDate').value, note:document.getElementById('weightNote').value });
-  DB.weightLog.sort((a,b)=>new Date(a.date)-new Date(b.date));
-  saveDB(); closeModal('modal-add-weight');
+  db.update(d => {
+    d.weightLog.push({ weight: w, date: document.getElementById('weightDate').value, note: document.getElementById('weightNote').value });
+    d.weightLog.sort((a, b) => new Date(a.date) - new Date(b.date));
+  });
+  closeModal('modal-add-weight');
   document.getElementById('weightInput').value=''; document.getElementById('weightNote').value='';
   renderWeight();
   renderHome();

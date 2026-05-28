@@ -6,7 +6,7 @@ module.exports = async function handler(req, res) {
   if (!session) return;
 
   if (req.method === 'GET') {
-    const workouts = await sql`
+    const { rows: workouts } = await sql`
       select w.id, w.name, w.muscles, w.date, w.duration,
              json_agg(
                json_build_object(
@@ -21,13 +21,13 @@ module.exports = async function handler(req, res) {
                    ) from workout_sets ws where ws.workout_exercise_id = we.id
                  )
                ) order by we.sort_order
-             ) as exercises
+             ) filter (where we.id is not null) as exercises
       from workouts w
       left join workout_exercises we on we.workout_id = w.id
       where w.user_id = ${session.uid}
       group by w.id
       order by w.date desc`;
-    return res.status(200).json(workouts);
+    return res.status(200).json(workouts.map(w => ({ ...w, exercises: w.exercises ?? [] })));
   }
 
   if (req.method === 'POST') {

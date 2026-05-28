@@ -12,11 +12,12 @@ function renderUserScreen() {
 
 function saveProfile() {
   if (!DB.user) return;
-  DB.user.name   = document.getElementById('editName').value   || DB.user.name;
-  DB.user.age    = document.getElementById('editAge').value;
-  DB.user.height = document.getElementById('editHeight').value;
-  DB.user.goal   = document.getElementById('editGoal').value;
-  saveDB();
+  db.update(d => {
+    d.user.name   = document.getElementById('editName').value   || d.user.name;
+    d.user.age    = document.getElementById('editAge').value;
+    d.user.height = document.getElementById('editHeight').value;
+    d.user.goal   = document.getElementById('editGoal').value;
+  });
   renderUserScreen();
   renderHome();
   closeModal('modal-edit-profile');
@@ -43,9 +44,12 @@ function renderWeekPlanEditor() {
 }
 
 function saveWeekPlan() {
-  Object.keys(DAYS_HE).forEach(k=>{
-    const inp = document.getElementById('wp_'+k);
-    if(inp) DB.weekPlan[k] = inp.value.trim();
+  db.update(d => {
+    Object.keys(DAYS_HE).forEach(k => {
+      const inp = document.getElementById('wp_' + k);
+      if (inp) d.weekPlan[k] = inp.value.trim();
+    });
   });
-  saveDB(); closeModal('modal-week-plan'); renderTodayPlan();
+  closeModal('modal-week-plan');
+  renderTodayPlan();
 }
