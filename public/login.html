@@ -236,6 +236,32 @@ body {
 .google-btn:active { transform: scale(0.98); }
 .google-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
 
+/* ── Password requirements ── */
+.pw-reqs {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+}
+.req {
+  font-size: 12px;
+  color: var(--text3);
+  padding-right: 18px;
+  position: relative;
+  transition: color 0.15s ease;
+}
+.req::before {
+  content: '✗';
+  position: absolute;
+  right: 0;
+  color: var(--accent2);
+  font-size: 11px;
+  font-weight: 700;
+}
+.req.ok { color: #6EE7B7; }
+.req.ok::before { content: '✓'; color: #10B981; }
+
 /* ── Footer ── */
 .auth-footer {
   margin-top: 28px;
@@ -281,7 +307,14 @@ body {
     </div>
     <div class="field">
       <label for="signup-password">סיסמה</label>
-      <input id="signup-password" type="password" placeholder="לפחות 6 תווים" required minlength="6" autocomplete="new-password">
+      <input id="signup-password" type="password" placeholder="לפחות 8 תווים" required minlength="8" autocomplete="new-password">
+      <ul class="pw-reqs" id="pw-reqs">
+        <li id="req-len"  class="req">לפחות 8 תווים</li>
+        <li id="req-upper" class="req">אות גדולה (A-Z)</li>
+        <li id="req-lower" class="req">אות קטנה (a-z)</li>
+        <li id="req-digit" class="req">ספרה (0-9)</li>
+        <li id="req-special" class="req">תו מיוחד (!@#$%...)</li>
+      </ul>
     </div>
     <button type="submit" class="submit-btn">
       <span class="btn-text">צור חשבון</span>
@@ -326,7 +359,7 @@ document.querySelectorAll('.seg-btn').forEach(t => {
 
 const ERRORS = {
   'invalid email':           'אימייל לא תקין',
-  'password too short':      'הסיסמה קצרה מדי — לפחות 6 תווים',
+  'password too weak':       'הסיסמה לא עומדת בדרישות',
   'email already registered':'אימייל זה כבר רשום',
   'invalid credentials':     'אימייל או סיסמה שגויים',
   'missing credentials':     'נא למלא אימייל וסיסמה',
@@ -371,6 +404,21 @@ document.getElementById('form-signup').addEventListener('submit', e => {
     document.getElementById('signup-email').value.trim(),
     document.getElementById('signup-password').value,
     e.target.querySelector('.submit-btn'));
+});
+
+const pwInput = document.getElementById('signup-password');
+const checks = {
+  'req-len':     v => v.length >= 8,
+  'req-upper':   v => /[A-Z]/.test(v),
+  'req-lower':   v => /[a-z]/.test(v),
+  'req-digit':   v => /\d/.test(v),
+  'req-special': v => /[!@#$%^&*()\-_=+[\]{};':",.<>/?\\|`~]/.test(v),
+};
+pwInput.addEventListener('input', () => {
+  const v = pwInput.value;
+  for (const [id, fn] of Object.entries(checks)) {
+    document.getElementById(id).classList.toggle('ok', fn(v));
+  }
 });
 
 fetch('/api/auth/me', { credentials: 'same-origin' })

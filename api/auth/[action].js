@@ -21,7 +21,7 @@ module.exports = async function handler(req, res) {
     const { email, password } = await readJsonBody(req);
     if (!email || !password) return res.status(400).json({ error: 'missing credentials' });
 
-    const rows = await sql`select id, password_hash from users where email = ${email.toLowerCase()}`;
+    const { rows } = await sql`select id, password_hash from users where email = ${email.toLowerCase()}`;
     if (!rows.length) return res.status(401).json({ error: 'invalid credentials' });
 
     if (!rows[0].password_hash) return res.status(401).json({ error: 'use google login' });
@@ -38,12 +38,13 @@ module.exports = async function handler(req, res) {
     if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); return res.status(405).end(); }
     const { email, password } = await readJsonBody(req);
     if (!email || !email.includes('@')) return res.status(400).json({ error: 'invalid email' });
-    if (!password || password.length < 6) return res.status(400).json({ error: 'password too short' });
+    const strongPw = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-_=+[\]{};':",.<>/?\\|`~]).{8,}$/;
+    if (!password || !strongPw.test(password)) return res.status(400).json({ error: 'password too weak' });
 
     const hash = await bcrypt.hash(password, 10);
     let user;
     try {
-      const [row] = await sql`
+      const { rows: [row] } = await sql`
         insert into users (email, password_hash) values (${email.toLowerCase()}, ${hash}) returning id`;
       user = row;
     } catch (e) {
@@ -102,7 +103,7 @@ module.exports = async function handler(req, res) {
     const email = profile.email.toLowerCase();
 
     // Atomic upsert — works even if password_hash is NOT NULL
-    const [row] = await sql`
+    const { rows: [row] } = await sql`
       INSERT INTO users (email, password_hash)
       VALUES (${email}, NULL)
       ON CONFLICT (email) DO UPDATE SET email = EXCLUDED.email
