@@ -8,7 +8,8 @@ let selectedMuscles = [];
 
 // Returns pre-filled sets from the last time this exercise was done, or empty sets.
 function getLastUsedSets(exName, defaultCount = 3) {
-  for (let i = DB.workouts.length - 1; i >= 0; i--) {
+  // DB.workouts is sorted date desc — index 0 is most recent
+  for (let i = 0; i < DB.workouts.length; i++) {
     const ex = DB.workouts[i].exercises.find(e => e.name === exName);
     if (ex && ex.sets && ex.sets.length) {
       return ex.sets.map(s => ({ weight: s.weight || '', reps: s.reps || '', done: false }));

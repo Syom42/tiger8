@@ -1,7 +1,7 @@
 // ============ HOME SCREEN ============
 
 function renderHome() {
-  const name = DB.user?.name || 'Athlete';
+  const name = DB.user?.name || DB.user?.email?.split('@')[0] || 'ספורטאי';
   const h = new Date().getHours();
   const greet = h<12 ? 'בוקר טוב' : h<17 ? 'צהריים טובים' : 'ערב טוב';
   document.getElementById('greetingText').textContent = greet + ', ' + name + '! 💪';
@@ -281,7 +281,7 @@ function renderTodayPlan() {
 function renderLastWorkoutPreview() {
   const el = document.getElementById('lastWorkoutPreview');
   if (!DB.workouts.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text3)">אין אימונים עדיין</div>'; return; }
-  const w = DB.workouts[DB.workouts.length-1];
+  const w = DB.workouts[0]; // workouts are sorted date desc, first is most recent
   const d = new Date(w.date).toLocaleDateString('he-IL');
   el.innerHTML = `<div style="font-weight:700;font-size:16px">${w.name}</div>
     <div style="font-size:12px;color:var(--text2);margin-top:4px">${d} • ${w.exercises.length} תרגילים</div>`;

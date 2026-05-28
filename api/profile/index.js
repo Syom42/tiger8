@@ -7,9 +7,11 @@ module.exports = async function handler(req, res) {
 
   if (req.method === 'GET') {
     const { rows } = await sql`
-      select name, age, height, goal, joined_at
-      from user_profiles where user_id = ${session.uid}`;
-    return res.status(200).json(rows[0] ?? {});
+      select up.name, up.age, up.height, up.goal, up.joined_at, u.email
+      from users u
+      left join user_profiles up on up.user_id = u.id
+      where u.id = ${session.uid}`;
+    return res.status(200).json(rows[0] ?? { email: session.email });
   }
 
   if (req.method === 'PUT') {

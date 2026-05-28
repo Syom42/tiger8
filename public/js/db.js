@@ -1,7 +1,7 @@
 // ============ DATA LAYER (relational Postgres, cookie auth) ============
 
 const DB_DEFAULTS = {
-  user: null,
+  user: { email: '', name: '', age: null, height: null, goal: 'strength', joined: null },
   workouts: [],
   plans: [],
   weightLog: [],
@@ -36,26 +36,31 @@ async function loadDB() {
   try {
     const [profile, serverExercises, workouts, plans, weekPlan, prs, weightLog, supplements] =
       await Promise.all([
-        apiFetch('/api/profile').then(r => r?.ok ? r.json() : {}),
-        apiFetch('/api/exercises').then(r => r?.ok ? r.json() : []),
-        apiFetch('/api/workouts').then(r => r?.ok ? r.json() : []),
-        apiFetch('/api/plans').then(r => r?.ok ? r.json() : []),
-        apiFetch('/api/week-plan').then(r => r?.ok ? r.json() : { sun:'', mon:'', tue:'', wed:'', thu:'', fri:'', sat:'' }),
-        apiFetch('/api/prs').then(r => r?.ok ? r.json() : {}),
-        apiFetch('/api/weight').then(r => r?.ok ? r.json() : []),
-        apiFetch('/api/supplements').then(r => r?.ok ? r.json() : []),
+        apiFetch('/api/profile').then(r => r?.ok ? r.json() : {}).catch(e => (console.warn('load profile failed', e), {})),
+        apiFetch('/api/exercises').then(r => r?.ok ? r.json() : []).catch(e => (console.warn('load exercises failed', e), [])),
+        apiFetch('/api/workouts').then(r => r?.ok ? r.json() : []).catch(e => (console.warn('load workouts failed', e), [])),
+        apiFetch('/api/plans').then(r => r?.ok ? r.json() : []).catch(e => (console.warn('load plans failed', e), [])),
+        apiFetch('/api/week-plan').then(r => r?.ok ? r.json() : { sun:'', mon:'', tue:'', wed:'', thu:'', fri:'', sat:'' }).catch(e => (console.warn('load week-plan failed', e), { sun:'', mon:'', tue:'', wed:'', thu:'', fri:'', sat:'' })),
+        apiFetch('/api/prs').then(r => r?.ok ? r.json() : {}).catch(e => (console.warn('load prs failed', e), {})),
+        apiFetch('/api/weight').then(r => r?.ok ? r.json() : []).catch(e => (console.warn('load weight failed', e), [])),
+        apiFetch('/api/supplements').then(r => r?.ok ? r.json() : []).catch(e => (console.warn('load supplements failed', e), [])),
       ]);
 
-    DB.user = (profile && profile.name != null)
-      ? { name: profile.name, age: profile.age, height: profile.height, goal: profile.goal, joined: profile.joined_at }
-      : null;
+    DB.user = {
+      email: profile.email || '',
+      name: profile.name || '',
+      age: profile.age || null,
+      height: profile.height || null,
+      goal: profile.goal || 'strength',
+      joined: profile.joined_at || new Date().toISOString(),
+    };
 
     DB.exercises = serverExercises.length
       ? serverExercises.map(e => ({ id: e.id, name: e.name, muscle: e.muscle, desc: e.description, isCustom: e.is_custom }))
       : null;
 
     DB.workouts = workouts.map(w => ({
-      id: w.id, name: w.name, muscles: w.muscles, date: w.date, duration: w.duration,
+      id: Number(w.id), name: w.name, muscles: w.muscles, date: w.date, duration: w.duration,
       exercises: (w.exercises || []).filter(Boolean).map(ex => ({
         name: ex.exercise_name, restSeconds: ex.rest_seconds,
         sets: (ex.sets || []).filter(Boolean).map(s => ({ weight: s.weight, reps: s.reps, done: s.done })),
@@ -63,7 +68,7 @@ async function loadDB() {
     }));
 
     DB.plans = plans.map(p => ({
-      id: p.id, name: p.name, desc: p.description,
+      id: Number(p.id), name: p.name, desc: p.description,
       exercises: (p.exercises || []).filter(Boolean).map(e => ({ name: e.exercise_name, restSeconds: e.rest_seconds })),
     }));
 
@@ -149,7 +154,6 @@ async function syncSection(key) {
 }
 
 async function syncProfile() {
-  if (!DB.user) return;
   await apiFetch('/api/profile', {
     method: 'PUT',
     body: JSON.stringify({ name: DB.user.name, age: DB.user.age, height: DB.user.height, goal: DB.user.goal }),

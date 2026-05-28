@@ -107,7 +107,7 @@ function buildUserContext() {
 
   return `
 === נתוני משתמש ===
-שם: ${DB.user?.name || 'ספורטאי'} | מטרה: ${goalMap[goal] || goal} | משקל: ${weightTrend}
+שם: ${DB.user?.name || DB.user?.email?.split('@')[0] || 'ספורטאי'} | מטרה: ${goalMap[goal] || goal} | משקל: ${weightTrend}
 לוח שבועי: ${weekLines}
 סה"כ אימונים: ${DB.workouts.length}
 
@@ -239,7 +239,7 @@ function renderChatHistory() {
     return `
       <div style="display:flex;flex-direction:column;margin-bottom:14px;max-width:82%;${isUser ? 'align-self:flex-end' : 'align-self:flex-start'}">
         <div style="font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:600;${isUser ? 'text-align:left' : 'text-align:right'}">
-          ${isUser ? (DB.user?.name || 'אתה') : `${p.emoji} ${p.name}`}
+          ${isUser ? (DB.user?.name || DB.user?.email?.split('@')[0] || 'אתה') : `${p.emoji} ${p.name}`}
         </div>
         <div style="padding:13px 16px;font-size:14px;line-height:1.7;${bubbleStyle}">
           ${msg.text.replace(/\n/g, '<br>')}

@@ -1,9 +1,10 @@
 // ============ USER & PROFILE ============
 
 function renderUserScreen() {
-  if (!DB.user) return; // safety (should never happen after auto-init)
-  document.getElementById('userAvatarLetter').textContent = (DB.user.name || 'A')[0].toUpperCase();
-  document.getElementById('userNameDisplay').textContent  = DB.user.name;
+  if (!DB.user) DB.user = { email: '', name: '', age: null, height: null, goal: 'strength', joined: new Date().toISOString() };
+  const displayName = DB.user.name || DB.user.email?.split('@')[0] || 'ספורטאי';
+  document.getElementById('userAvatarLetter').textContent = displayName[0].toUpperCase();
+  document.getElementById('userNameDisplay').textContent  = displayName;
   const j = DB.user.joined ? new Date(DB.user.joined) : new Date();
   document.getElementById('userJoinedDisplay').textContent = 'חבר מאז ' + j.toLocaleDateString('he-IL');
   document.getElementById('profileWorkouts').textContent  = DB.workouts.length;
@@ -11,12 +12,12 @@ function renderUserScreen() {
 }
 
 function saveProfile() {
-  if (!DB.user) return;
   db.update(d => {
+    if (!d.user) d.user = { name: '', age: null, height: null, goal: 'strength', joined: new Date().toISOString() };
     d.user.name   = document.getElementById('editName').value   || d.user.name;
-    d.user.age    = document.getElementById('editAge').value;
-    d.user.height = document.getElementById('editHeight').value;
-    d.user.goal   = document.getElementById('editGoal').value;
+    d.user.age    = document.getElementById('editAge').value || null;
+    d.user.height = document.getElementById('editHeight').value || null;
+    d.user.goal   = document.getElementById('editGoal').value || 'strength';
   }, { immediate: true });
   renderUserScreen();
   renderHome();
