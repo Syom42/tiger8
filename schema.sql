@@ -4,11 +4,11 @@
 drop table if exists user_data cascade;
 drop table if exists users cascade;
 
--- Local user accounts (email + password hash).
+-- Local user accounts (email + password hash). password_hash is null for Google-only users.
 create table if not exists users (
   id            bigserial primary key,
   email         text unique not null,
-  password_hash text not null,
+  password_hash text,
   created_at    timestamptz not null default now()
 );
 

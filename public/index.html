@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#ffffff">
+<meta name="theme-color" content="#0A0F1D">
 <title>Tiger8 - Unleash Your Inner Tiger</title>
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -22,16 +22,16 @@
 
 <!-- ====== HOME SCREEN ====== -->
 <div class="screen active" id="screen-home">
-  <div class="header">
+  <div class="home-header">
     <div>
-      <h1>Tiger8 🐯</h1>
-      <div style="font-size:12px;color:var(--text3);font-weight:600;letter-spacing:0.5px;margin-top:-2px">Unleash Your Inner Tiger Rawr</div>
-      <div class="header-sub" id="greetingText">ברוך הבא! 💪</div>
+      <div class="home-brand">Tiger8 🐯</div>
+      <div class="home-sub">Unleash Your Inner Tiger</div>
+      <div class="home-greeting" id="greetingText">ברוך הבא! 💪</div>
     </div>
-    <div style="text-align:right">
-      <div style="font-size:28px" id="streakDisplay">🔥 0</div>
-      <div style="font-size:12px;color:var(--text2)">רצף ימים</div>
-      <button onclick="logout()" title="התנתק" style="margin-top:6px;background:transparent;border:1px solid var(--text3);color:var(--text2);font-size:11px;padding:3px 8px;border-radius:6px;cursor:pointer">התנתק</button>
+    <div class="home-streak-wrap">
+      <div class="home-streak-num" id="streakDisplay">🔥 0</div>
+      <div class="home-streak-label">רצף ימים</div>
+      <button class="home-logout" onclick="logout()">התנתק</button>
     </div>
   </div>
 
