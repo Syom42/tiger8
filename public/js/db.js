@@ -14,7 +14,6 @@ const DB_DEFAULTS = {
 
 let DB = { ...DB_DEFAULTS };
 let LOADED = null;
-let _isUnloading = false;
 
 // ─── Fetch helper (cookie auth) ──────────────────────────────────────────────────────────────────────────────
 
@@ -23,8 +22,7 @@ async function apiFetch(path, opts = {}) {
     credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
     ...opts,
-    // keepalive: true tells the browser to complete this request even if the page unloads
-    keepalive: _isUnloading,
+    keepalive: true, // always keep-alive to survive page unload
   });
   if (res.status === 401) { window.location.href = '/login.html'; return null; }
   return res;
@@ -80,6 +78,8 @@ async function loadDB() {
       takenDates: s.taken_dates || [],
     }));
 
+    console.log('[Tiger8] loadDB complete:', { plans: DB.plans.length, workouts: DB.workouts.length, user: DB.user.email });
+
   } catch (e) {
     console.warn('loadDB failed', e);
     DB = { ...DB_DEFAULTS };
@@ -106,6 +106,7 @@ function migrateDB() {
 const _dirty = new Set();
 let _saveTimer = null;
 let _saving = false;
+let _flushPromise = null;
 
 function saveDB() {
   clearTimeout(_saveTimer);
@@ -113,19 +114,27 @@ function saveDB() {
 }
 
 async function flushSave() {
-  if (_saving) { _saveTimer = setTimeout(flushSave, 150); return; }
+  if (_saving) {
+    // Wait for existing save to finish, then try again
+    if (_flushPromise) await _flushPromise;
+    if (!_dirty.size) return;
+  }
   if (!_dirty.size) return;
   _saving = true;
   const keys = [..._dirty];
   _dirty.clear();
-  try {
-    await Promise.allSettled(keys.map(key => syncSection(key)));
-    LOADED = JSON.parse(JSON.stringify(DB));
-  } finally {
-    _saving = false;
-    // If more dirty keys arrived while we were saving, flush again
-    if (_dirty.size) saveDB();
-  }
+  _flushPromise = (async () => {
+    try {
+      const results = await Promise.allSettled(keys.map(key => syncSection(key)));
+      results.forEach((r, i) => { if (r.status === 'rejected') console.error('sync failed:', keys[i], r.reason); });
+      LOADED = JSON.parse(JSON.stringify(DB));
+    } finally {
+      _saving = false;
+      _flushPromise = null;
+      if (_dirty.size) flushSave();
+    }
+  })();
+  return _flushPromise;
 }
 
 // Flush on tab hide (mobile background) and on page unload (refresh/navigate away)
@@ -133,9 +142,12 @@ window.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') { clearTimeout(_saveTimer); flushSave(); }
 });
 window.addEventListener('beforeunload', () => {
-  _isUnloading = true;   // enables keepalive on all subsequent fetch calls
   clearTimeout(_saveTimer);
-  flushSave();           // fire-and-forget; keepalive ensures requests complete after unload
+  // Force flush even if _saving — the keepalive on fetch ensures completion
+  if (_dirty.size) {
+    _saving = false;
+    flushSave();
+  }
 });
 
 // ─── Section sync ─────────────────────────────────────────────────────────────
@@ -277,7 +289,7 @@ const db = {
     }
     if (immediate) {
       clearTimeout(_saveTimer);
-      flushSave();
+      return flushSave();
     } else {
       saveDB();
     }
