@@ -1,10 +1,8 @@
 // ============ GROQ AI SERVICE ============
 // Uses Groq's free API (Llama 3 model) — 14,400 requests/day free tier, no billing needed.
 
-// Set your Groq API key in the app settings (stored in localStorage under 'ironlog_groq_key').
-const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
-const GROQ_MODEL   = 'llama-3.3-70b-versatile';
-const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+// AI calls go through /api/coach (serverless) — GROQ_API_KEY lives in Vercel env vars, never in the browser.
+const GROQ_PROXY_URL = '/api/coach';
 
 // ---------- Personality system ----------
 let activePersonality = 'conquest'; // 'conquest' | 'guy'
@@ -129,10 +127,6 @@ ${recentWorkouts}
 
 // ---------- Core API call ----------
 async function geminiAsk(userMessage) {
-  if (!GROQ_API_KEY || GROQ_API_KEY === 'PASTE_YOUR_GROQ_KEY_HERE') {
-    throw new Error('NO_KEY');
-  }
-
   const personality = PERSONALITIES[activePersonality];
 
   // Detect if user is explicitly asking for a plan/exercise change
@@ -157,14 +151,10 @@ ${buildUserContext()}`;
     content: m.text
   }));
 
-  const res = await fetch(GROQ_API_URL, {
+  const res = await fetch(GROQ_PROXY_URL, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${GROQ_API_KEY}`
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: GROQ_MODEL,
       messages: [
         { role: 'system', content: systemPrompt },
         ...historyMessages,
@@ -266,11 +256,6 @@ async function sendCoachMessage() {
   const inp = document.getElementById('chatInput');
   const text = inp?.value.trim();
   if (!text) return;
-
-  if (GROQ_API_KEY === 'PASTE_YOUR_GROQ_KEY_HERE') {
-    showToast('Set your Groq API key in js/gemini.js 🔑', 'error');
-    return;
-  }
 
   inp.value = '';
   inp.disabled = true;
