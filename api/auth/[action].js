@@ -101,27 +101,15 @@ module.exports = async function handler(req, res) {
 
     const email = profile.email.toLowerCase();
 
-    // Find or create user (upsert-safe)
-    let rows = await sql`select id from users where email = ${email}`;
-    let userId;
-    if (rows.length) {
-      userId = rows[0].id;
-    } else {
-      try {
-        const [newUser] = await sql`
-          insert into users (email, password_hash) values (${email}, ${null}) returning id`;
-        userId = newUser.id;
-        await sql`insert into user_profiles (user_id) values (${userId}) on conflict do nothing`;
-      } catch (e) {
-        if (e.code === '23505') {
-          // Another request beat us — just fetch the existing row
-          const [existing] = await sql`select id from users where email = ${email}`;
-          userId = existing.id;
-        } else {
-          throw e;
-        }
-      }
-    }
+    // Atomic upsert — works even if password_hash is NOT NULL
+    const [row] = await sql`
+      INSERT INTO users (email, password_hash)
+      VALUES (${email}, NULL)
+      ON CONFLICT (email) DO UPDATE SET email = EXCLUDED.email
+      RETURNING id
+    `;
+    const userId = row.id;
+    await sql`INSERT INTO user_profiles (user_id) VALUES (${userId}) ON CONFLICT DO NOTHING`;
 
     const token = await signSession(userId, email);
     setSessionCookie(res, token);
