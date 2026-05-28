@@ -22,10 +22,8 @@ async function verifySession(token) {
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, getSecret());
-    return payload; // { uid, email, iat, exp }
-  } catch {
-    return null;
-  }
+    return payload;
+  } catch { return null; }
 }
 
 function parseCookies(req) {
@@ -43,26 +41,14 @@ function parseCookies(req) {
 
 function setSessionCookie(res, token) {
   const isProd = process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
-  const parts = [
-    `${COOKIE_NAME}=${token}`,
-    'Path=/',
-    'HttpOnly',
-    'SameSite=Lax',
-    `Max-Age=${COOKIE_MAX_AGE}`,
-  ];
+  const parts = [`${COOKIE_NAME}=${token}`, 'Path=/', 'HttpOnly', 'SameSite=Lax', `Max-Age=${COOKIE_MAX_AGE}`];
   if (isProd) parts.push('Secure');
   res.setHeader('Set-Cookie', parts.join('; '));
 }
 
 function clearSessionCookie(res) {
   const isProd = process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
-  const parts = [
-    `${COOKIE_NAME}=`,
-    'Path=/',
-    'HttpOnly',
-    'SameSite=Lax',
-    'Max-Age=0',
-  ];
+  const parts = [`${COOKIE_NAME}=`, 'Path=/', 'HttpOnly', 'SameSite=Lax', 'Max-Age=0'];
   if (isProd) parts.push('Secure');
   res.setHeader('Set-Cookie', parts.join('; '));
 }
@@ -74,10 +60,7 @@ async function getSessionFromReq(req) {
 
 async function requireSession(req, res) {
   const session = await getSessionFromReq(req);
-  if (!session) {
-    res.status(401).json({ error: 'unauthorized' });
-    return null;
-  }
+  if (!session) { res.status(401).json({ error: 'unauthorized' }); return null; }
   return session;
 }
 
@@ -94,15 +77,4 @@ async function readJsonBody(req) {
   });
 }
 
-module.exports = {
-  bcrypt,
-  signSession,
-  verifySession,
-  parseCookies,
-  setSessionCookie,
-  clearSessionCookie,
-  getSessionFromReq,
-  requireSession,
-  readJsonBody,
-  COOKIE_NAME,
-};
+module.exports = { bcrypt, signSession, setSessionCookie, clearSessionCookie, getSessionFromReq, requireSession, readJsonBody };
