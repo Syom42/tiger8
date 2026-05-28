@@ -50,11 +50,11 @@ function savePlan() {
     db.update(d => {
       const plan = d.plans.find(p => p.id === eid);
       if (plan) { plan.name = name; plan.desc = desc; plan.exercises = exercises; }
-    });
+    }, { immediate: true });
   } else {
     db.update(d => {
       d.plans.push({ id: Date.now(), name, desc, exercises });
-    });
+    }, { immediate: true });
   }
   editingPlanId = null;
   planExList_arr = [];
@@ -131,7 +131,7 @@ function deletePlan(id) {
     buttons: [
       { label: 'ביטול' },
       { label: 'מחק', primary: true, action: () => {
-        db.update(d => { d.plans = d.plans.filter(p => p.id !== id); });
+        db.update(d => { d.plans = d.plans.filter(p => p.id !== id); }, { immediate: true });
         renderPlans();
         showToast('התוכנית נמחקה');
       }}

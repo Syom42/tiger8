@@ -6,7 +6,7 @@ function saveWeight() {
   db.update(d => {
     d.weightLog.push({ weight: w, date: document.getElementById('weightDate').value, note: document.getElementById('weightNote').value });
     d.weightLog.sort((a, b) => new Date(a.date) - new Date(b.date));
-  });
+  }, { immediate: true });
   closeModal('modal-add-weight');
   document.getElementById('weightInput').value=''; document.getElementById('weightNote').value='';
   renderWeight();

@@ -17,7 +17,7 @@ function saveProfile() {
     d.user.age    = document.getElementById('editAge').value;
     d.user.height = document.getElementById('editHeight').value;
     d.user.goal   = document.getElementById('editGoal').value;
-  });
+  }, { immediate: true });
   renderUserScreen();
   renderHome();
   closeModal('modal-edit-profile');
@@ -49,7 +49,7 @@ function saveWeekPlan() {
       const inp = document.getElementById('wp_' + k);
       if (inp) d.weekPlan[k] = inp.value.trim();
     });
-  });
+  }, { immediate: true });
   closeModal('modal-week-plan');
   renderTodayPlan();
 }

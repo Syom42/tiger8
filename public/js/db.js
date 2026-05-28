@@ -14,14 +14,17 @@ const DB_DEFAULTS = {
 
 let DB = { ...DB_DEFAULTS };
 let LOADED = null;
+let _isUnloading = false;
 
-// ─── Fetch helper (cookie auth) ───────────────────────────────────────────────
+// ─── Fetch helper (cookie auth) ──────────────────────────────────────────────────────────────────────────────
 
 async function apiFetch(path, opts = {}) {
   const res = await fetch(path, {
     credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
     ...opts,
+    // keepalive: true tells the browser to complete this request even if the page unloads
+    keepalive: _isUnloading,
   });
   if (res.status === 401) { window.location.href = '/login.html'; return null; }
   return res;
@@ -101,11 +104,11 @@ let _saving = false;
 
 function saveDB() {
   clearTimeout(_saveTimer);
-  _saveTimer = setTimeout(flushSave, 600);
+  _saveTimer = setTimeout(flushSave, 250);
 }
 
 async function flushSave() {
-  if (_saving) { _saveTimer = setTimeout(flushSave, 200); return; }
+  if (_saving) { _saveTimer = setTimeout(flushSave, 150); return; }
   if (!_dirty.size) return;
   _saving = true;
   const keys = [..._dirty];
@@ -115,11 +118,19 @@ async function flushSave() {
     LOADED = JSON.parse(JSON.stringify(DB));
   } finally {
     _saving = false;
+    // If more dirty keys arrived while we were saving, flush again
+    if (_dirty.size) saveDB();
   }
 }
 
+// Flush on tab hide (mobile background) and on page unload (refresh/navigate away)
 window.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') { clearTimeout(_saveTimer); flushSave(); }
+});
+window.addEventListener('beforeunload', () => {
+  _isUnloading = true;   // enables keepalive on all subsequent fetch calls
+  clearTimeout(_saveTimer);
+  flushSave();           // fire-and-forget; keepalive ensures requests complete after unload
 });
 
 // ─── Section sync ─────────────────────────────────────────────────────────────
@@ -254,13 +265,18 @@ async function syncSupplements() {
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 const db = {
-  update(fn) {
+  update(fn, { immediate = false } = {}) {
     const snapshot = JSON.parse(JSON.stringify(DB));
     fn(DB);
     for (const key of Object.keys(DB_DEFAULTS)) {
       if (JSON.stringify(DB[key]) !== JSON.stringify(snapshot[key])) _dirty.add(key);
     }
-    saveDB();
+    if (immediate) {
+      clearTimeout(_saveTimer);
+      flushSave();
+    } else {
+      saveDB();
+    }
   },
 };
 
