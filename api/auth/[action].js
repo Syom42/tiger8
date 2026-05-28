@@ -3,6 +3,7 @@ const { sql } = require('../_lib/db');
 
 module.exports = async function handler(req, res) {
   const action = req.query.action;
+  try {
 
   if (action === 'login') {
     if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); return res.status(405).end(); }
@@ -53,4 +54,8 @@ module.exports = async function handler(req, res) {
   }
 
   return res.status(404).json({ error: 'not found' });
+  } catch (err) {
+    console.error('[auth]', action, err);
+    return res.status(500).json({ error: 'server error' });
+  }
 };

@@ -3,72 +3,272 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<meta name="theme-color" content="#ffffff">
-<title>Tiger8 — התחברות</title>
+<meta name="theme-color" content="#0A0F1D">
+<title>Tiger8 — כניסה</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css">
 <style>
-  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 16px; }
-  .auth-card {
-    width: 100%; max-width: 380px;
-    background: var(--card, #fff);
-    border-radius: 16px;
-    padding: 28px 24px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.08);
-  }
-  .auth-card h1 { margin: 0 0 4px; font-size: 32px; text-align: center; }
-  .auth-sub { text-align: center; color: var(--text2, #666); font-size: 13px; margin-bottom: 24px; }
-  .tabs { display: flex; margin-bottom: 20px; border-bottom: 1px solid var(--text3, #ddd); }
-  .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-weight: 600; color: var(--text2, #666); border-bottom: 2px solid transparent; }
-  .tab.active { color: var(--accent, #f04); border-bottom-color: var(--accent, #f04); }
-  .auth-form { display: none; flex-direction: column; gap: 12px; }
-  .auth-form.active { display: flex; }
-  .auth-form label { font-size: 13px; color: var(--text2, #666); margin-bottom: -8px; }
-  .auth-form input { padding: 12px; border: 1px solid var(--text3, #ddd); border-radius: 8px; font-size: 16px; font-family: inherit; direction: ltr; text-align: left; }
-  .auth-form button { padding: 12px; border: 0; border-radius: 8px; background: var(--accent, #f04); color: #fff; font-weight: 700; font-size: 16px; cursor: pointer; margin-top: 8px; }
-  .auth-form button:disabled { opacity: 0.6; cursor: not-allowed; }
-  .auth-msg { font-size: 13px; min-height: 18px; text-align: center; margin-top: 8px; }
-  .auth-msg.err { color: #e33; }
-  .auth-msg.ok { color: #2a7; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+input, button { font-family: 'Rubik', sans-serif; }
+
+:root {
+  --bg:      #0A0F1D;
+  --bg2:     #131B2F;
+  --bg3:     #1D2843;
+  --border:  rgba(148,163,184,0.12);
+  --accent:  #3B82F6;
+  --accent2: #EF4444;
+  --text:    #F8FAFC;
+  --text2:   #94A3B8;
+  --text3:   #64748B;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Rubik', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  padding: 24px 20px;
+}
+
+/* ── Brand ── */
+.brand {
+  text-align: center;
+  margin-bottom: 36px;
+}
+.brand-icon {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, var(--accent) 0%, #6366F1 100%);
+  border-radius: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  margin-bottom: 14px;
+  box-shadow: 0 8px 24px rgba(59,130,246,0.3);
+}
+.brand-name {
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  color: var(--text);
+}
+.brand-tagline {
+  font-size: 14px;
+  color: var(--text3);
+  margin-top: 4px;
+  font-weight: 400;
+}
+
+/* ── Container ── */
+.auth-wrap {
+  width: 100%;
+  max-width: 360px;
+}
+
+/* ── Segment control ── */
+.seg {
+  display: flex;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 28px;
+  gap: 4px;
+}
+.seg-btn {
+  flex: 1;
+  padding: 10px 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text2);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.seg-btn.active {
+  background: var(--bg3);
+  color: var(--text);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+/* ── Forms ── */
+.auth-form {
+  display: none;
+  flex-direction: column;
+  gap: 14px;
+}
+.auth-form.active { display: flex; }
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.field input {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 13px 14px;
+  font-size: 15px;
+  color: var(--text);
+  direction: ltr;
+  text-align: left;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  -webkit-appearance: none;
+}
+.field input::placeholder { color: var(--text3); }
+.field input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+}
+.field input:focus:invalid { border-color: var(--accent2); box-shadow: 0 0 0 3px rgba(239,68,68,0.12); }
+
+/* ── Submit btn ── */
+.submit-btn {
+  margin-top: 6px;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: -0.01em;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+  position: relative;
+  overflow: hidden;
+}
+.submit-btn:active { transform: scale(0.98); }
+.submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.submit-btn .spinner {
+  display: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.65s linear infinite;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin: -9px 0 0 -9px;
+}
+.submit-btn.loading .btn-text { opacity: 0; }
+.submit-btn.loading .spinner { display: block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Message ── */
+.auth-msg {
+  min-height: 20px;
+  font-size: 13px;
+  text-align: center;
+  margin-top: 12px;
+  font-weight: 500;
+  border-radius: 8px;
+  padding: 0;
+  transition: all 0.2s ease;
+}
+.auth-msg:not(:empty) { padding: 10px 14px; }
+.auth-msg.err { background: rgba(239,68,68,0.1); color: #FCA5A5; border: 1px solid rgba(239,68,68,0.2); }
+.auth-msg.ok  { background: rgba(16,185,129,0.1); color: #6EE7B7; border: 1px solid rgba(16,185,129,0.2); }
+
+/* ── Footer ── */
+.auth-footer {
+  margin-top: 28px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text3);
+}
 </style>
 </head>
 <body>
-  <div class="auth-card">
-    <h1>Tiger8 🐯</h1>
-    <div class="auth-sub">שחרר את הנמר שבך</div>
 
-    <div class="tabs">
-      <div class="tab active" data-tab="login">התחבר</div>
-      <div class="tab" data-tab="signup">הירשם</div>
-    </div>
+<div class="brand">
+  <div class="brand-icon">🐯</div>
+  <div class="brand-name">Tiger8</div>
+  <div class="brand-tagline">שחרר את הנמר שבך</div>
+</div>
 
-    <form class="auth-form active" id="form-login" autocomplete="on">
-      <label for="login-email">אימייל</label>
-      <input id="login-email" type="email" required autocomplete="email">
-      <label for="login-password">סיסמה</label>
-      <input id="login-password" type="password" required autocomplete="current-password">
-      <button type="submit">התחבר</button>
-    </form>
-
-    <form class="auth-form" id="form-signup" autocomplete="on">
-      <label for="signup-email">אימייל</label>
-      <input id="signup-email" type="email" required autocomplete="email">
-      <label for="signup-password">סיסמה (לפחות 6 תווים)</label>
-      <input id="signup-password" type="password" required minlength="6" autocomplete="new-password">
-      <button type="submit">צור חשבון</button>
-    </form>
-
-    <div class="auth-msg" id="auth-msg"></div>
+<div class="auth-wrap">
+  <div class="seg">
+    <button class="seg-btn active" data-tab="login">התחבר</button>
+    <button class="seg-btn" data-tab="signup">הירשם</button>
   </div>
+
+  <form class="auth-form active" id="form-login" autocomplete="on" novalidate>
+    <div class="field">
+      <label for="login-email">אימייל</label>
+      <input id="login-email" type="email" placeholder="you@example.com" required autocomplete="email">
+    </div>
+    <div class="field">
+      <label for="login-password">סיסמה</label>
+      <input id="login-password" type="password" placeholder="••••••••" required autocomplete="current-password">
+    </div>
+    <button type="submit" class="submit-btn">
+      <span class="btn-text">התחבר</span>
+      <span class="spinner"></span>
+    </button>
+  </form>
+
+  <form class="auth-form" id="form-signup" autocomplete="on" novalidate>
+    <div class="field">
+      <label for="signup-email">אימייל</label>
+      <input id="signup-email" type="email" placeholder="you@example.com" required autocomplete="email">
+    </div>
+    <div class="field">
+      <label for="signup-password">סיסמה</label>
+      <input id="signup-password" type="password" placeholder="לפחות 6 תווים" required minlength="6" autocomplete="new-password">
+    </div>
+    <button type="submit" class="submit-btn">
+      <span class="btn-text">צור חשבון</span>
+      <span class="spinner"></span>
+    </button>
+  </form>
+
+  <div class="auth-msg" id="auth-msg"></div>
+</div>
+
+<div class="auth-footer">Tiger8 &copy; 2026</div>
 
 <script>
 const msgEl = document.getElementById('auth-msg');
-function setMsg(text, kind) { msgEl.textContent = text || ''; msgEl.className = 'auth-msg' + (kind ? ' ' + kind : ''); }
 
-document.querySelectorAll('.tab').forEach(t => {
+function setMsg(text, kind) {
+  msgEl.textContent = text || '';
+  msgEl.className = 'auth-msg' + (kind ? ' ' + kind : '');
+}
+
+function setLoading(btn, on) {
+  btn.disabled = on;
+  btn.classList.toggle('loading', on);
+}
+
+document.querySelectorAll('.seg-btn').forEach(t => {
   t.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.seg-btn').forEach(x => x.classList.remove('active'));
     document.querySelectorAll('.auth-form').forEach(x => x.classList.remove('active'));
     t.classList.add('active');
     document.getElementById('form-' + t.dataset.tab).classList.add('active');
@@ -76,8 +276,16 @@ document.querySelectorAll('.tab').forEach(t => {
   });
 });
 
+const ERRORS = {
+  'invalid email':           'אימייל לא תקין',
+  'password too short':      'הסיסמה קצרה מדי — לפחות 6 תווים',
+  'email already registered':'אימייל זה כבר רשום',
+  'invalid credentials':     'אימייל או סיסמה שגויים',
+  'missing credentials':     'נא למלא אימייל וסיסמה',
+};
+
 async function postAuth(path, email, password, btn) {
-  btn.disabled = true;
+  setLoading(btn, true);
   setMsg('');
   try {
     const res = await fetch(path, {
@@ -88,22 +296,15 @@ async function postAuth(path, email, password, btn) {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const map = {
-        'invalid email': 'אימייל לא תקין',
-        'password too short': 'סיסמה קצרה מדי',
-        'email already registered': 'אימייל זה כבר רשום',
-        'invalid credentials': 'אימייל או סיסמה שגויים',
-        'missing credentials': 'נא למלא אימייל וסיסמה',
-      };
-      setMsg(map[data.error] || data.error || 'שגיאה. נסה שוב.', 'err');
+      setMsg(ERRORS[data.error] || data.error || 'משהו השתבש. נסה שוב.', 'err');
       return;
     }
-    setMsg('מעביר...', 'ok');
+    setMsg('מועבר לאפליקציה...', 'ok');
     window.location.href = '/';
-  } catch (e) {
-    setMsg('שגיאת רשת. נסה שוב.', 'err');
+  } catch {
+    setMsg('שגיאת רשת. בדוק חיבור ונסה שוב.', 'err');
   } finally {
-    btn.disabled = false;
+    setLoading(btn, false);
   }
 }
 
@@ -112,7 +313,7 @@ document.getElementById('form-login').addEventListener('submit', e => {
   postAuth('/api/auth/login',
     document.getElementById('login-email').value.trim(),
     document.getElementById('login-password').value,
-    e.target.querySelector('button'));
+    e.target.querySelector('.submit-btn'));
 });
 
 document.getElementById('form-signup').addEventListener('submit', e => {
@@ -120,13 +321,12 @@ document.getElementById('form-signup').addEventListener('submit', e => {
   postAuth('/api/auth/signup',
     document.getElementById('signup-email').value.trim(),
     document.getElementById('signup-password').value,
-    e.target.querySelector('button'));
+    e.target.querySelector('.submit-btn'));
 });
 
-// If already signed in, skip the form.
-fetch('/api/auth/me', { credentials: 'same-origin' }).then(r => {
-  if (r.ok) window.location.href = '/';
-}).catch(() => {});
+fetch('/api/auth/me', { credentials: 'same-origin' })
+  .then(r => { if (r.ok) window.location.href = '/'; })
+  .catch(() => {});
 </script>
 </body>
 </html>
