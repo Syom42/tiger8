@@ -1,0 +1,182 @@
+// ============ SUPPLEMENTS ============
+
+// DB.supplements schema: [{ id, name, dose, time, enabled, takenDates:[] }]
+
+function renderSupplements() {
+  renderSupplementReminders();
+  renderSupplementList();
+}
+
+// ── Home screen reminder cards ───────────────────────────────────────────────
+function renderSupplementReminders() {
+  const el = document.getElementById('supplementReminders');
+  if (!el) return;
+
+  const todayKey = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+
+  const due = (DB.supplements || []).filter(s => {
+    if (!s.enabled) return false;
+    const [h, m] = (s.time || '08:00').split(':').map(Number);
+    const dueMins = h * 60 + m;
+    // Show reminder from 1 hour before due time until end of day
+    return nowMins >= dueMins - 60;
+  });
+
+  if (!due.length) { el.innerHTML = ''; el.style.display = 'none'; return; }
+  el.style.display = 'block';
+
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-title">💊 תוספי היום</div>
+      ${due.map(s => {
+        const taken = (s.takenDates || []).includes(todayKey);
+        return `
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+            <div style="flex:1">
+              <div style="font-weight:700;font-size:14px;${taken ? 'text-decoration:line-through;color:var(--text3)' : ''}">${s.name}</div>
+              <div style="font-size:13px;color:var(--text3)">${s.dose || ''} · ${s.time || ''}</div>
+            </div>
+            <button onclick="toggleSupplementTaken('${s.id}')"
+              style="width:44px;height:44px;border-radius:50%;border:2px solid ${taken ? 'var(--success,#22c55e)' : 'var(--border)'};
+                     background:${taken ? 'var(--success,#22c55e)' : 'transparent'};
+                     color:${taken ? '#fff' : 'var(--text3)'};font-size:18px;cursor:pointer;transition:all 0.2s;flex-shrink:0">
+              ${taken ? '✓' : '○'}
+            </button>
+          </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function toggleSupplementTaken(id) {
+  const todayKey = new Date().toISOString().slice(0, 10);
+  db.update(d => {
+    const s = d.supplements.find(x => x.id === id);
+    if (!s) return;
+    if (!s.takenDates) s.takenDates = [];
+    const idx = s.takenDates.indexOf(todayKey);
+    if (idx === -1) {
+      s.takenDates.push(todayKey);
+      // Keep only last 30 days to avoid bloat
+      s.takenDates = s.takenDates.slice(-30);
+    } else {
+      s.takenDates.splice(idx, 1);
+    }
+  });
+  renderSupplementReminders();
+}
+
+// ── Supplement management screen ─────────────────────────────────────────────
+function renderSupplementList() {
+  const el = document.getElementById('supplementList');
+  if (!el) return;
+
+  if (!DB.supplements?.length) {
+    el.innerHTML = `<div style="text-align:center;padding:30px;color:var(--text3);font-size:13px">אין תוספים עדיין.<br>הקש + כדי להוסיף.</div>`;
+    return;
+  }
+
+  el.innerHTML = DB.supplements.map(s => `
+    <div style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--bg2);border-radius:var(--radius);margin-bottom:8px;border:1px solid var(--border)">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:15px">${s.name}</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px">${s.dose ? s.dose + ' · ' : ''}${s.time || 'לא נקבע זמן'}</div>
+      </div>
+      <div onclick="toggleSupplementEnabled('${s.id}')"
+        style="width:52px;height:30px;border-radius:15px;background:${s.enabled ? 'var(--accent)' : 'var(--bg3)'};
+               position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0">
+        <div style="position:absolute;top:3px;${s.enabled ? 'right:3px' : 'left:3px'};width:24px;height:24px;border-radius:50%;background:#fff;transition:all 0.2s"></div>
+      </div>
+      <button onclick="deleteSupplementPrompt('${s.id}')"
+        style="background:rgba(255,101,132,0.1);border:none;color:var(--accent2);border-radius:8px;padding:8px 12px;cursor:pointer;font-size:16px;min-width:44px;min-height:44px">🗑</button>
+    </div>`).join('');
+}
+
+function toggleSupplementEnabled(id) {
+  db.update(d => {
+    const s = d.supplements.find(x => x.id === id);
+    if (s) s.enabled = !s.enabled;
+  });
+  renderSupplements();
+}
+
+function deleteSupplementPrompt(id) {
+  const s = DB.supplements.find(x => x.id === id);
+  if (!s) return;
+  showDialog({
+    icon: '🗑️',
+    title: 'מחיקת תוסף?',
+    msg: s.name,
+    buttons: [
+      { label: 'ביטול' },
+      { label: 'מחק', primary: true, action: () => {
+        db.update(d => { d.supplements = d.supplements.filter(x => x.id !== id); });
+        renderSupplements();
+      }}
+    ]
+  });
+}
+
+// ── Add / Edit modal ──────────────────────────────────────────────────────────
+function openAddSupplement() {
+  document.getElementById('suppName').value = '';
+  document.getElementById('suppDose').value = '';
+  document.getElementById('suppTime').value = '08:00';
+  showModal('modal-supplement');
+}
+
+function saveSupplement() {
+  const name = document.getElementById('suppName').value.trim();
+  const dose = document.getElementById('suppDose').value.trim();
+  const time = document.getElementById('suppTime').value || '08:00';
+  if (!name) { showToast('הזן שם לתוסף', 'error'); return; }
+
+  db.update(d => {
+    d.supplements.push({ id: 'supp_' + Date.now(), name, dose, time, enabled: true, takenDates: [] });
+  });
+
+  closeModal('modal-supplement');
+  renderSupplements();
+  requestNotificationPermission();
+  showToast('✅ ' + name + ' נוסף');
+}
+
+// ── Browser Notifications ─────────────────────────────────────────────────────
+function requestNotificationPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
+function scheduleSupplementNotifications() {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+
+  (DB.supplements || []).forEach(s => {
+    if (!s.enabled) return;
+    const taken = (s.takenDates || []).includes(todayKey);
+    if (taken) return;
+
+    const [h, m] = (s.time || '08:00').split(':').map(Number);
+    const fireAt = new Date();
+    fireAt.setHours(h, m, 0, 0);
+    const msUntil = fireAt - now;
+
+    if (msUntil > 0 && msUntil < 24 * 60 * 60 * 1000) {
+      setTimeout(() => {
+        if (document.hidden) { // only notify when app is in background
+          new Notification('💊 Tiger8 — Supplement Reminder', {
+            body: `Time to take ${s.name}${s.dose ? ' · ' + s.dose : ''}`,
+            icon: '/favicon.ico',
+            tag: 'supp-' + s.id
+          });
+        }
+        // Also refresh the home screen reminder cards
+        renderSupplementReminders();
+      }, msUntil);
+    }
+  });
+}

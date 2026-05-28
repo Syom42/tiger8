@@ -1,0 +1,39 @@
+name: Release on Merge to Main
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get short SHA
+        id: vars
+        run: echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Create release zip
+        run: |
+          zip -r Tiger8-${{ steps.vars.outputs.sha }}.zip . \
+            --exclude "*.git*" \
+            --exclude ".github/*" \
+            --exclude "*.DS_Store"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: release-${{ steps.vars.outputs.sha }}
+          name: "Tiger8 — ${{ steps.vars.outputs.sha }}"
+          body: |
+            Automated release from merge to `main`.
+            Commit: `${{ github.sha }}`
+            Message: ${{ github.event.head_commit.message }}
+          files: ironlog-${{ steps.vars.outputs.sha }}.zip

@@ -1,0 +1,30 @@
+{
+  "name": "tiger8",
+  "version": "1.0.0",
+  "description": "Tiger8 — Hebrew fitness tracking web app (Vercel + Postgres)",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "vercel-build": "echo 'static — nothing to build'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/supersushuka-spec/tiger8.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/supersushuka-spec/tiger8/issues"
+  },
+  "homepage": "https://github.com/supersushuka-spec/tiger8#readme",
+  "dependencies": {
+    "@capacitor/android": "^8.3.4",
+    "@capacitor/cli": "^8.3.4",
+    "@capacitor/core": "^8.3.4",
+    "@vercel/postgres": "^0.10.0",
+    "bcryptjs": "^2.4.3",
+    "jose": "^5.10.0"
+  }
+}

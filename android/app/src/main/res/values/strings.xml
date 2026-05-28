@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Tiger8</string>
+    <string name="title_activity_main">Tiger8</string>
+    <string name="package_name">com.tiger8.app</string>
+    <string name="custom_url_scheme">com.tiger8.app</string>
+</resources>

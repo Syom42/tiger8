@@ -1,0 +1,16 @@
+{
+  "name": "Tiger8 - Unleash Your Inner Tiger",
+  "short_name": "Tiger8",
+  "description": "Unleash Your Inner Tiger Rawr �",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0a0a0f",
+  "theme_color": "#6c63ff",
+  "orientation": "portrait",
+  "lang": "he",
+  "dir": "rtl",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

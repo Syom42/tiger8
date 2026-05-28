@@ -1,0 +1,17 @@
+node_modules/
+www/
+.vercel/
+.env
+.env.local
+.env.*.local
+*.log
+
+# Capacitor / Android build artifacts
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+android/captures/
+android/app/release/
+android/app/debug/

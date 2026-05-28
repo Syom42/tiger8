@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#ffffff">
+<title>Tiger8 - Unleash Your Inner Tiger</title>
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+</head>
+<body>
+<div class="app">
+
+<!-- ACTIVE WORKOUT BADGE -->
+<div class="active-badge" id="activeBadge">⚡ אימון פעיל</div>
+
+<!-- ====== HOME SCREEN ====== -->
+<div class="screen active" id="screen-home">
+  <div class="header">
+    <div>
+      <h1>Tiger8 🐯</h1>
+      <div style="font-size:12px;color:var(--text3);font-weight:600;letter-spacing:0.5px;margin-top:-2px">Unleash Your Inner Tiger Rawr</div>
+      <div class="header-sub" id="greetingText">ברוך הבא! 💪</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:28px" id="streakDisplay">🔥 0</div>
+      <div style="font-size:12px;color:var(--text2)">רצף ימים</div>
+      <button onclick="logout()" title="התנתק" style="margin-top:6px;background:transparent;border:1px solid var(--text3);color:var(--text2);font-size:11px;padding:3px 8px;border-radius:6px;cursor:pointer">התנתק</button>
+    </div>
+  </div>
+
+  <div class="stats-grid" id="homeStats">
+    <div class="stat-card">
+      <div class="stat-num" id="statWorkouts">0</div>
+      <div class="stat-label">אימונים</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="statWeight">--</div>
+      <div class="stat-label">משקל גוף</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="statPRs">0</div>
+      <div class="stat-label">שיאים</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="statThisWeek">0</div>
+      <div class="stat-label">השבוע</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">מעקב שבועי</div>
+    <div class="days-grid" id="weekCalendar"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">תוכנית היום</div>
+    <div id="todayPlan"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">האימון האחרון</div>
+    <div id="lastWorkoutPreview"></div>
+  </div>
+
+  <button class="btn btn-primary btn-full" onclick="showModal('modal-start-choice')" style="margin-top:8px">
+    <span>⚡</span> התחל אימון
+  </button>
+
+  <!-- Supplement reminders (rendered by supplements.js) -->
+  <div id="supplementReminders" style="display:none"></div>
+
+</div>
+
+<!-- ====== WORKOUT SCREEN (contains Plans / History / PRs tabs) ====== -->
+<div class="screen" id="screen-workout">
+  <div class="header">
+    <div>
+      <h1 id="workoutScreenTitle">אימונים</h1>
+    </div>
+    <div id="workoutScreenActions" style="display:flex;gap:8px">
+      <button class="btn btn-ghost btn-sm" onclick="showModal('modal-routine-template')">&#x1F4CB; תבנית</button>
+      <button class="btn btn-primary btn-sm" onclick="editingPlanId=null;planExList_arr=[];document.getElementById('planName').value='';document.getElementById('planDesc').value='';document.querySelector('#modal-new-plan .modal-title').textContent='תוכנית חדשה';renderPlanExList();showModal('modal-new-plan')">+ תוכנית</button>
+    </div>
+    <div id="prsScreenActions" style="display:none">
+      <button class="btn btn-ghost btn-sm" onclick="showModal('modal-1rm')">&#x1F9EE; מחשבון 1RM</button>
+    </div>
+  </div>
+
+  <div class="tabs" id="workoutSubTabs">
+    <div class="tab active" onclick="switchWorkoutTab('plans',this)">תוכניות</div>
+    <div class="tab" onclick="switchWorkoutTab('history',this)">היסטוריה</div>
+    <div class="tab" onclick="switchWorkoutTab('prs',this)">שיאים</div>
+  </div>
+
+  <!-- ---- PLANS TAB ---- -->
+  <div id="workout-tab-plans">
+    <div id="activeWorkoutSection" style="display:none">
+      <div class="card" style="border-color:var(--accent2)">
+        <div class="card-title" style="color:var(--accent2)">⚡ אימון פעיל</div>
+        <div id="activeWorkoutName" style="font-size:18px;font-weight:800;margin-bottom:12px"></div>
+        <div id="activeTimer" style="font-size:14px;color:var(--text2);margin-bottom:12px"></div>
+        <div id="exerciseList"></div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="btn btn-primary" onclick="finishWorkout()">✅ סיים אימון</button>
+          <button class="btn btn-danger btn-sm" onclick="cancelWorkout()">ביטול</button>
+        </div>
+      </div>
+    </div>
+    <div id="plansList">
+      <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <div class="empty-title">אין תוכניות עדיין</div>
+        <div class="empty-text">צור את תוכנית האימון הראשונה שלך</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---- HISTORY TAB ---- -->
+  <div id="workout-tab-history" style="display:none">
+    <div class="tabs" id="historyInnerTabs">
+      <div class="tab active" onclick="switchHistoryTab('list',this)">אימונים</div>
+      <div class="tab" onclick="switchHistoryTab('progress',this)">התקדמות</div>
+    </div>
+    <div id="historyList"></div>
+    <div id="historyProgress" style="display:none">
+      <div class="card">
+        <div class="card-title">נפח אימון (8 אחרונים)</div>
+        <div class="chart-container"><canvas id="volumeChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">תדירות אימונים לפי יום</div>
+        <div class="chart-container" style="height:160px"><canvas id="freqChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">נפח לפי קבוצת שריר</div>
+        <div class="chart-container" style="height:220px"><canvas id="muscleChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---- PRs TAB ---- -->
+  <div id="workout-tab-prs" style="display:none">
+    <div class="card" style="border-color:var(--gold)">
+      <div class="card-title" style="color:var(--gold)">🏆 שיאים אישיים</div>
+      <div id="prList"></div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <div class="card-title">התקדמות לפי תרגיל</div>
+      <div id="exSelectForChart" style="margin-bottom:12px"></div>
+      <div class="chart-container"><canvas id="prChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- hidden stubs so old showScreen references don't break -->
+<div id="screen-history" style="display:none"></div>
+<div id="screen-prs" style="display:none"></div>
+
+<!-- ====== WEIGHT SCREEN (stub — content lives in Profile tabs) ====== -->
+<div id="screen-weight" style="display:none"></div>
+
+<!-- ====== USER / PROFILE SCREEN (contains Profile / Weight / Supps tabs) ====== -->
+<div class="screen" id="screen-user">
+  <div class="tabs" style="margin-top:8px">
+    <div class="tab active" onclick="switchProfileTab('profile',this)">פרופיל</div>
+    <div class="tab" onclick="switchProfileTab('weight',this)">משקל</div>
+    <div class="tab" onclick="switchProfileTab('supps',this)">תוספים</div>
+  </div>
+
+  <!-- ---- PROFILE TAB ---- -->
+  <div id="profile-tab-profile">
+    <div id="profileView">
+      <div style="padding-top:20px">
+        <div class="user-avatar" id="userAvatarLetter">A</div>
+        <div class="user-name" id="userNameDisplay"></div>
+        <div class="user-joined" id="userJoinedDisplay"></div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-num" id="profileWorkouts">0</div>
+          <div class="stat-label">סה"כ אימונים</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="profileStreak">0</div>
+          <div class="stat-label">רצף נוכחי</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">הגדרות</div>
+        <div class="settings-row" onclick="toggleTheme()">
+          <span class="settings-label">מראה</span>
+          <span class="settings-val" id="themeValDisplay">מצב כהה</span>
+        </div>
+        <div class="settings-row" onclick="showModal('modal-edit-profile')">
+          <span class="settings-label">עריכת פרופיל</span>
+          <span class="settings-val">&lsaquo;</span>
+        </div>
+        <div class="settings-row" onclick="showModal('modal-week-plan')">
+          <span class="settings-label">לוח שבועי</span>
+          <span class="settings-val">&lsaquo;</span>
+        </div>
+        <div class="settings-row" onclick="showModal('modal-routine-template')">
+          <span class="settings-label">תבניות אימון</span>
+          <span class="settings-val">&lsaquo;</span>
+        </div>
+        <div class="settings-row" onclick="showModal('modal-custom-exercise')">
+          <span class="settings-label" id="exLibraryLabel">ספריית תרגילים</span>
+          <span class="settings-val">&lsaquo;</span>
+        </div>
+        <div class="settings-row" onclick="exportData()">
+          <span class="settings-label">ייצוא נתונים</span>
+          <span class="settings-val">&lsaquo;</span>
+        </div>
+        <div class="settings-row" onclick="confirmClearData()" style="color:var(--accent2)">
+          <span class="settings-label">איפוס כל הנתונים</span>
+          <span class="settings-val">&lsaquo;</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---- WEIGHT TAB ---- -->
+  <div id="profile-tab-weight" style="display:none">
+    <div class="header" style="margin-bottom:16px">
+      <h1>משקל גוף</h1>
+      <button class="btn btn-primary btn-sm" onclick="showModal('modal-add-weight')">+ רשום</button>
+    </div>
+    <div class="card" style="border-color:var(--accent3)">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:13px;color:var(--text2)">משקל נוכחי</div>
+          <div style="font-size:42px;font-weight:900;color:var(--accent3)" id="currentWeightDisplay">--</div>
+          <div style="font-size:13px;color:var(--text2)">ק"ג</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:13px;color:var(--text2)">שינוי</div>
+          <div style="font-size:24px;font-weight:700" id="weightChangeDisplay">--</div>
+          <div style="font-size:11px;color:var(--text2)">מהרישום הראשון</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">מגמת משקל</div>
+      <div class="chart-container"><canvas id="weightChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🗓 יומן משקל</div>
+      <div id="weightLog"></div>
+    </div>
+  </div>
+
+  <!-- ---- SUPPS TAB ---- -->
+  <div id="profile-tab-supps" style="display:none">
+    <div class="header" style="margin-bottom:16px">
+      <div>
+        <h1>תוספי תזונה</h1>
+        <div class="header-sub">מעקב תזכורות יומי</div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="openAddSupplement()" style="display:flex;align-items:center;gap:6px">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> הוסף
+      </button>
+    </div>
+    <div id="supplementList"></div>
+  </div>
+</div>
+
+<!-- hidden stub -->
+<div id="screen-supplements" style="display:none"></div>
+
+<!-- ====== COACH SCREEN ====== -->
+<div class="screen" id="screen-coach">
+  <div class="header">
+    <div>
+      <h1>מאמן AI</h1>
+      <div class="header-sub" id="coachPersonalityLabel">👊 Conquest — המאמן האגרסיבי</div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button onclick="switchPersonality('conquest')" id="btnConquest" class="btn btn-sm" style="padding:6px 10px;font-size:16px;border-radius:50%;background:var(--accent);border:none;cursor:pointer">👊</button>
+      <button onclick="switchPersonality('guy')" id="btnGuy" class="btn btn-sm" style="padding:6px 10px;font-size:16px;border-radius:50%;background:var(--bg3);border:1px solid var(--border);cursor:pointer">🌈</button>
+    </div>
+  </div>
+
+  <!-- Chat -->
+  <div class="chat-wrap">
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="chat-input-row">
+      <textarea id="chatInput" placeholder="שאל את המאמן כל שאלה..." onkeydown="chatInputKeydown(event)" rows="1"></textarea>
+      <button id="chatSendBtn" class="btn btn-primary" onclick="sendCoachMessage()" style="padding:10px 16px">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== BOTTOM NAV ====== -->
+<nav class="nav">
+  <button class="nav-btn active" onclick="showScreen('home',this)">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    בית
+  </button>
+  <button class="nav-btn" onclick="showScreen('workout',this)">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+    אימונים
+  </button>
+  <button class="nav-btn" onclick="showScreen('user',this)">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    פרופיל
+  </button>
+  <button class="nav-btn" onclick="showScreen('coach',this)">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+    מאמן
+  </button>
+</nav>
+
+<!-- REST TIMER -->
+<div class="timer-overlay" id="restTimer">
+  <div class="timer-label">⏱️ מנוחה</div>
+  <div class="timer-display" id="timerDisplay">01:30</div>
+  <div class="progress-bar"><div class="progress-fill" id="timerProgress" style="width:100%"></div></div>
+  <div class="timer-controls">
+    <button class="btn btn-ghost btn-sm" onclick="addTimerSeconds(-15)">-15s</button>
+    <button class="btn btn-ghost btn-sm" onclick="addTimerSeconds(15)">+15s</button>
+    <button class="btn btn-primary" style="flex:1" onclick="stopTimer()">סגור</button>
+  </div>
+</div>
+
+<!-- ====== MODALS ====== -->
+
+<!-- START CHOICE MODAL -->
+<div class="modal-overlay" id="modal-start-choice">
+  <div class="modal" style="position:relative">
+    <button class="modal-close" onclick="closeModal('modal-start-choice')">✕</button>
+    <div class="modal-title" style="text-align:center;margin-bottom:6px">התחל אימון</div>
+    <div style="font-size:13px;color:var(--text2);text-align:center;margin-bottom:24px">בחר כיצד להתחיל</div>
+
+    <div id="startChoicePlans"></div>
+
+    <div style="display:flex;align-items:center;gap:10px;margin:20px 0">
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+      <div style="font-size:12px;color:var(--text3);font-weight:600">או</div>
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+    </div>
+
+    <button class="btn btn-primary btn-full" onclick="closeModal('modal-start-choice');showModal('modal-new-workout')">
+      <span>✏️</span> אימון מותאם אישית
+    </button>
+  </div>
+</div>
+
+<!-- NEW WORKOUT MODAL -->
+<div class="modal-overlay" id="modal-new-workout">
+  <div class="modal" style="position:relative">
+    <button class="modal-close" onclick="closeModal('modal-new-workout')">✕</button>
+    <div class="modal-title">אימון חדש</div>
+    <div class="input-group">
+      <label>שם האימון</label>
+      <input type="text" id="newWorkoutName" placeholder="לדוגמה: פוש, רגליים...">
+    </div>
+    <div class="input-group">
+      <label>קבוצות שריר</label>
+      <div class="muscle-select" id="muscleSelectNew">
+        <div class="muscle-tag" onclick="toggleMuscle(this,'chest')">חזה</div>
+        <div class="muscle-tag" onclick="toggleMuscle(this,'back')">גב</div>
+        <div class="muscle-tag" onclick="toggleMuscle(this,'shoulders')">כתפיים</div>
+        <div class="muscle-tag" onclick="toggleMuscle(this,'biceps')">ביצפס</div>
+        <div class="muscle-tag" onclick="toggleMuscle(this,'triceps')">טריצפס</div>
+        <div class="muscle-tag" onclick="toggleMuscle(this,'legs')">רגליים</div>
+        <div class="muscle-tag" onclick="toggleMuscle(this,'core')">בטן/קור</div>
+        <div class="muscle-tag" onclick="toggleMuscle(this,'cardio')">קרדיו</div>
+      </div>
+    </div>
+    <div id="exerciseAdder">
+      <div class="card-title" style="margin-bottom:10px">תרגילים</div>
+      <div id="newExerciseList"></div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="newExInput" placeholder="חפש תרגיל..." style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;color:var(--text);font-family:'Rubik',sans-serif;font-size:16px;outline:none">
+        <button class="btn btn-ghost btn-sm" onclick="addExerciseToNew()">+ הוסף</button>
+      </div>
+      <div style="margin-top:6px;text-align:right">
+        <span style="font-size:11px;color:var(--accent);cursor:pointer" onclick="showModal('modal-custom-exercise')">✏️ הוסף תרגיל מותאם אישית</span>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-full" style="margin-top:16px" onclick="startNewWorkout()">⚡ התחל אימון</button>
+  </div>
+</div>
+
+<!-- NEW PLAN MODAL -->
+<div class="modal-overlay" id="modal-new-plan">
+  <div class="modal" style="position:relative">
+    <button class="modal-close" onclick="closeModal('modal-new-plan')">✕</button>
+    <div class="modal-title">תוכנית חדשה</div>
+    <div class="input-group">
+      <label>שם התוכנית</label>
+      <input type="text" id="planName" placeholder="לדוגמה: PPL, עליון/תחתון...">
+    </div>
+    <div class="input-group">
+      <label>תיאור</label>
+      <textarea id="planDesc" placeholder="תיאור קצר..."></textarea>
+    </div>
+    <div id="planExerciseSection">
+      <div class="card-title" style="margin-bottom:10px">תרגילים בתוכנית</div>
+      <div id="planExList"></div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="planExInput" placeholder="חפש תרגיל..." style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;color:var(--text);font-family:'Rubik',sans-serif;font-size:16px;outline:none">
+        <button class="btn btn-ghost btn-sm" onclick="addExToPlan()">+ הוסף</button>
+      </div>
+      <div style="margin-top:6px;text-align:right">
+        <span style="font-size:11px;color:var(--accent);cursor:pointer" onclick="showModal('modal-custom-exercise')">✏️ הוסף תרגיל מותאם אישית</span>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-full" style="margin-top:16px" onclick="savePlan()">שמור תוכנית</button>
+  </div>
+</div>
+
+<!-- ADD WEIGHT MODAL -->
+<div class="modal-overlay" id="modal-add-weight">
+  <div class="modal" style="position:relative">
+    <button class="modal-close" onclick="closeModal('modal-add-weight')">✕</button>
+    <div class="modal-title">רישום משקל</div>
+    <div class="input-group">
+      <label>משקל (ק"ג)</label>
+      <input type="number" id="weightInput" placeholder="75.5" step="0.1">
+    </div>
+    <div class="input-group">
+      <label>תאריך</label>
+      <input type="date" id="weightDate">
+    </div>
+    <div class="input-group">
+      <label>הערה (אופציונלי)</label>
+      <input type="text" id="weightNote" placeholder="לדוגמה: בוקר, על בטן ריקה...">
+    </div>
+    <button class="btn btn-primary btn-full" onclick="saveWeight()">שמור</button>
+  </div>
+</div>
+
+<!-- WEEK PLAN MODAL -->
+<div class="modal-overlay" id="modal-week-plan">
+  <div class="modal" style="position:relative">
+    <button class="modal-close" onclick="closeModal('modal-week-plan')">✕</button>
+    <div class="modal-title">לוח שבועי</div>
+    <div id="weekPlanEditor"></div>
+    <button class="btn btn-primary btn-full" style="margin-top:16px" onclick="saveWeekPlan()">שמור לוח</button>
+  </div>
+</div>
+
+<!-- EDIT PROFILE MODAL -->
+<div class="modal-overlay" id="modal-edit-profile">
+  <div class="modal" style="position:relative">
+    <button class="modal-close" onclick="closeModal('modal-edit-profile')">✕</button>
+    <div class="modal-title">עריכת פרופיל</div>
+    <div class="input-group">
+      <label>שם</label>
+      <input type="text" id="editName" placeholder="השם שלך">
+    </div>
+    <div class="input-group">
+      <label>גיל</label>
+      <input type="number" id="editAge" placeholder="25">
+    </div>
+    <div class="input-group">
+      <label>גובה (ס"מ)</label>
+      <input type="number" id="editHeight" placeholder="175">
+    </div>
+    <div class="input-group">
+      <label>מטרה</label>
+      <select id="editGoal">
+        <option value="strength">כוח</option>
+        <option value="muscle">עלייה במסה</option>
+        <option value="fat">ירידה בשומן</option>
+        <option value="endurance">סיבולת</option>
+      </select>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="saveProfile()">שמור</button>
+  </div>
+</div>
+
+<!-- WORKOUT DETAIL MODAL -->
+<div class="modal-overlay" id="modal-workout-detail">
+  <div class="modal" style="position:relative">
+    <button class="modal-close" onclick="closeModal('modal-workout-detail')">✕</button>
+    <div id="workoutDetailContent"></div>
+  </div>
+</div>
+
+<!-- ROUTINE TEMPLATE MODAL -->
+<div class="modal-overlay" id="modal-routine-template">
+  <div class="modal" style="position:relative">
+    <button class="modal-close" onclick="closeModal('modal-routine-template')">✕</button>
+    <div class="modal-title">תבניות אימון 📋</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:16px">בחר תבנית להחלה על הלוח השבועי שלך</div>
+    <div id="templateOptions"></div>
+    <div id="templatePreview"></div>
+  </div>
+</div>
+
+<!-- CUSTOM EXERCISE MODAL -->
+<div class="modal-overlay" id="modal-custom-exercise">
+  <div class="modal" style="position:relative">
+    <button class="modal-close" onclick="closeModal('modal-custom-exercise')">✕</button>
+    <div class="modal-title">תרגיל מותאם אישית ✏️</div>
+    <div class="input-group">
+      <label>שם התרגיל</label>
+      <input type="text" id="customExName" placeholder="לדוגמה: Cable Flyes...">
+    </div>
+    <div class="input-group">
+      <label>קבוצת שריר</label>
+      <select id="customExMuscle">
+        <option value="chest">חזה</option>
+        <option value="back">גב</option>
+        <option value="shoulders">כתפיים</option>
+        <option value="biceps">ביצפס</option>
+        <option value="triceps">טריצפס</option>
+        <option value="legs">רגליים</option>
+        <option value="core">בטן / קור</option>
+        <option value="cardio">קרדיו</option>
+        <option value="other">אחר</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label>תיאור (אופציונלי)</label>
+      <input type="text" id="customExDesc" placeholder="תיאור קצר...">
+    </div>
+    <button class="btn btn-primary btn-full" onclick="saveCustomExercise()">✅ הוסף לספריה</button>
+  </div>
+</div>
+
+<!-- SUPPLEMENT MODAL -->
+<div class="modal-overlay" id="modal-supplement">
+  <div class="modal" style="position:relative">
+    <button class="modal-close" onclick="closeModal('modal-supplement')">&#x2715;</button>
+    <div class="modal-title">💊 הוסף תוסף</div>
+    <div class="input-group">
+      <label>שם</label>
+      <input type="text" id="suppName" placeholder="לדוגמה: קריאטין, ויטמין D...">
+    </div>
+    <div class="input-group">
+      <label>מינון (אופציונלי)</label>
+      <input type="text" id="suppDose" placeholder="לדוגמה: 5 גרם, 2 קפסולות...">
+    </div>
+    <div class="input-group">
+      <label>שעת תזכורת</label>
+      <input type="time" id="suppTime" value="08:00">
+    </div>
+    <button class="btn btn-primary btn-full" onclick="saveSupplement()">&#x2705; הוסף תוסף</button>
+  </div>
+</div>
+
+<!-- 1RM CALCULATOR MODAL -->
+<div class="modal-overlay" id="modal-1rm">
+  <div class="modal" style="position:relative">
+    <button class="modal-close" onclick="closeModal('modal-1rm')">&#x2715;</button>
+    <div class="modal-title">🥈 מחשבון 1RM</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:16px">הערכת המשקל המקסימלי לחזרה אחת (נוסחת אפלי)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div class="input-group" style="margin:0">
+        <label>משקל (ק"ג)</label>
+        <input type="number" id="ormWeight" placeholder="100" oninput="calc1RM()">
+      </div>
+      <div class="input-group" style="margin:0">
+        <label>חזרות</label>
+        <input type="number" id="ormReps" placeholder="5" oninput="calc1RM()">
+      </div>
+    </div>
+    <div id="ormResult"></div>
+  </div>
+</div>
+
+<!-- EXERCISE AUTOCOMPLETE DATALIST -->
+<datalist id="ex-datalist"></datalist>
+
+<!-- CUSTOM DIALOG -->
+<div id="custom-dialog-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);z-index:999;display:none;align-items:center;justify-content:center;padding:24px">
+  <div id="custom-dialog-box" style="background:var(--bg2);border:1px solid var(--border-light);border-radius:24px;padding:32px 24px;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,0.5);animation:dialogPop 0.3s cubic-bezier(0.16,1,0.3,1)">
+    <div id="custom-dialog-icon" style="font-size:42px;text-align:center;margin-bottom:16px"></div>
+    <div id="custom-dialog-title" style="font-size:18px;font-weight:800;text-align:center;color:var(--text);margin-bottom:8px"></div>
+    <div id="custom-dialog-msg" style="font-size:14px;color:var(--text2);text-align:center;line-height:1.5;margin-bottom:32px"></div>
+    <div id="custom-dialog-btns" style="display:flex;gap:12px;flex-direction:column"></div>
+  </div>
+</div>
+
+</div><!-- /.app -->
+
+<!-- ====== JAVASCRIPT ====== -->
+<!-- Order matters: db first, then features, then app init last -->
+<script src="js/db.js"></script>
+<script src="js/exercises.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/home.js"></script>
+<script src="js/timer.js"></script>
+<script src="js/workout.js"></script>
+<script src="js/plans.js"></script>
+<script src="js/history.js"></script>
+<script src="js/prs.js"></script>
+<script src="js/weight.js"></script>
+<script src="js/user.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/supplements.js"></script>
+<script src="js/ai_chat.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

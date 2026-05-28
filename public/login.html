@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#ffffff">
+<title>Tiger8 — התחברות</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<style>
+  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 16px; }
+  .auth-card {
+    width: 100%; max-width: 380px;
+    background: var(--card, #fff);
+    border-radius: 16px;
+    padding: 28px 24px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+  }
+  .auth-card h1 { margin: 0 0 4px; font-size: 32px; text-align: center; }
+  .auth-sub { text-align: center; color: var(--text2, #666); font-size: 13px; margin-bottom: 24px; }
+  .tabs { display: flex; margin-bottom: 20px; border-bottom: 1px solid var(--text3, #ddd); }
+  .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-weight: 600; color: var(--text2, #666); border-bottom: 2px solid transparent; }
+  .tab.active { color: var(--accent, #f04); border-bottom-color: var(--accent, #f04); }
+  .auth-form { display: none; flex-direction: column; gap: 12px; }
+  .auth-form.active { display: flex; }
+  .auth-form label { font-size: 13px; color: var(--text2, #666); margin-bottom: -8px; }
+  .auth-form input { padding: 12px; border: 1px solid var(--text3, #ddd); border-radius: 8px; font-size: 16px; font-family: inherit; direction: ltr; text-align: left; }
+  .auth-form button { padding: 12px; border: 0; border-radius: 8px; background: var(--accent, #f04); color: #fff; font-weight: 700; font-size: 16px; cursor: pointer; margin-top: 8px; }
+  .auth-form button:disabled { opacity: 0.6; cursor: not-allowed; }
+  .auth-msg { font-size: 13px; min-height: 18px; text-align: center; margin-top: 8px; }
+  .auth-msg.err { color: #e33; }
+  .auth-msg.ok { color: #2a7; }
+</style>
+</head>
+<body>
+  <div class="auth-card">
+    <h1>Tiger8 🐯</h1>
+    <div class="auth-sub">שחרר את הנמר שבך</div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="login">התחבר</div>
+      <div class="tab" data-tab="signup">הירשם</div>
+    </div>
+
+    <form class="auth-form active" id="form-login" autocomplete="on">
+      <label for="login-email">אימייל</label>
+      <input id="login-email" type="email" required autocomplete="email">
+      <label for="login-password">סיסמה</label>
+      <input id="login-password" type="password" required autocomplete="current-password">
+      <button type="submit">התחבר</button>
+    </form>
+
+    <form class="auth-form" id="form-signup" autocomplete="on">
+      <label for="signup-email">אימייל</label>
+      <input id="signup-email" type="email" required autocomplete="email">
+      <label for="signup-password">סיסמה (לפחות 6 תווים)</label>
+      <input id="signup-password" type="password" required minlength="6" autocomplete="new-password">
+      <button type="submit">צור חשבון</button>
+    </form>
+
+    <div class="auth-msg" id="auth-msg"></div>
+  </div>
+
+<script>
+const msgEl = document.getElementById('auth-msg');
+function setMsg(text, kind) { msgEl.textContent = text || ''; msgEl.className = 'auth-msg' + (kind ? ' ' + kind : ''); }
+
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.auth-form').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('form-' + t.dataset.tab).classList.add('active');
+    setMsg('');
+  });
+});
+
+async function postAuth(path, email, password, btn) {
+  btn.disabled = true;
+  setMsg('');
+  try {
+    const res = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const map = {
+        'invalid email': 'אימייל לא תקין',
+        'password too short': 'סיסמה קצרה מדי',
+        'email already registered': 'אימייל זה כבר רשום',
+        'invalid credentials': 'אימייל או סיסמה שגויים',
+        'missing credentials': 'נא למלא אימייל וסיסמה',
+      };
+      setMsg(map[data.error] || data.error || 'שגיאה. נסה שוב.', 'err');
+      return;
+    }
+    setMsg('מעביר...', 'ok');
+    window.location.href = '/';
+  } catch (e) {
+    setMsg('שגיאת רשת. נסה שוב.', 'err');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+document.getElementById('form-login').addEventListener('submit', e => {
+  e.preventDefault();
+  postAuth('/api/auth/login',
+    document.getElementById('login-email').value.trim(),
+    document.getElementById('login-password').value,
+    e.target.querySelector('button'));
+});
+
+document.getElementById('form-signup').addEventListener('submit', e => {
+  e.preventDefault();
+  postAuth('/api/auth/signup',
+    document.getElementById('signup-email').value.trim(),
+    document.getElementById('signup-password').value,
+    e.target.querySelector('button'));
+});
+
+// If already signed in, skip the form.
+fetch('/api/auth/me', { credentials: 'same-origin' }).then(r => {
+  if (r.ok) window.location.href = '/';
+}).catch(() => {});
+</script>
+</body>
+</html>
