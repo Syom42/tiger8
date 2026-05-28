@@ -39,9 +39,9 @@ function renderSupplementReminders() {
               <div style="font-size:13px;color:var(--text3)">${s.dose || ''} · ${s.time || ''}</div>
             </div>
             <button onclick="toggleSupplementTaken('${s.id}')"
-              style="width:44px;height:44px;border-radius:50%;border:2px solid ${taken ? 'var(--success,#22c55e)' : 'var(--border)'};
-                     background:${taken ? 'var(--success,#22c55e)' : 'transparent'};
-                     color:${taken ? '#fff' : 'var(--text3)'};font-size:18px;cursor:pointer;transition:all 0.2s;flex-shrink:0">
+              style="width:44px;height:44px;border-radius:50%;border:2px solid ${taken ? 'var(--accent3)' : 'var(--border)'};
+                     background:${taken ? 'var(--accent3-glow)' : 'transparent'};
+                     color:${taken ? 'var(--accent3)' : 'var(--text3)'};font-size:18px;cursor:pointer;transition:all 0.2s;flex-shrink:0">
               ${taken ? '✓' : '○'}
             </button>
           </div>`;
@@ -89,7 +89,7 @@ function renderSupplementList() {
         <div style="position:absolute;top:3px;${s.enabled ? 'right:3px' : 'left:3px'};width:24px;height:24px;border-radius:50%;background:#fff;transition:all 0.2s"></div>
       </div>
       <button onclick="deleteSupplementPrompt('${s.id}')"
-        style="background:rgba(255,101,132,0.1);border:none;color:var(--accent2);border-radius:8px;padding:8px 12px;cursor:pointer;font-size:16px;min-width:44px;min-height:44px">🗑</button>
+        style="background:var(--accent2-glow);border:none;color:var(--accent2);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:16px;min-width:44px;min-height:44px;transition:all 0.15s">🗑</button>
     </div>`).join('');
 }
 

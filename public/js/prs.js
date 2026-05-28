@@ -67,7 +67,7 @@ function renderPRChart(exName) {
   if(prChartInstance) prChartInstance.destroy();
   prChartInstance = new Chart(ctx, {
     type:'line',
-    data:{ labels:data.map(d=>d.date), datasets:[{ label:'משקל מקסימלי (ק"ג)', data:data.map(d=>d.val), borderColor:'#ffd700', backgroundColor:'rgba(255,215,0,0.1)', fill:true, tension:0.4, pointBackgroundColor:'#ffd700', pointRadius:5 }] },
-    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{ticks:{color:'#9999bb',font:{size:10}}},y:{ticks:{color:'#9999bb',font:{size:10}},grid:{color:'rgba(255,255,255,0.05)'}}} }
+    data:{ labels:data.map(d=>d.date), datasets:[{ label:'משקל מקסימלי (ק"ג)', data:data.map(d=>d.val), borderColor:'#6C5CE7', backgroundColor:'rgba(108,92,231,0.08)', fill:true, tension:0.4, pointBackgroundColor:'#A29BFE', pointRadius:5, borderWidth:2.5 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{ticks:{color:'#8B95A8',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#8B95A8',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}}} }
   });
 }

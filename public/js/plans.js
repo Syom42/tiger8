@@ -83,12 +83,12 @@ function renderPlans() {
   el.innerHTML = DB.plans.map(p => {
     const names = p.exercises.slice(0,3).map(e => normalizeExercise(e).name).join(', ');
     return `
-    <div class="card" style="cursor:pointer">
+    <div class="card" style="cursor:pointer;border-left:3px solid var(--accent)">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div style="flex:1;min-width:0">
-          <div style="font-size:17px;font-weight:700;margin-bottom:4px">${p.name}</div>
+          <div style="font-size:17px;font-weight:800;margin-bottom:4px;letter-spacing:-0.02em">${p.name}</div>
           ${p.desc?`<div style="font-size:12px;color:var(--text2);margin-bottom:8px">${p.desc}</div>`:''}
-          <div style="font-size:12px;color:var(--text3)">${p.exercises.length} תרגילים: ${names}${p.exercises.length>3?'...':''}</div>
+          <div style="font-size:12px;color:var(--text3);display:flex;align-items:center;gap:4px"><span style="color:var(--accent-light)">💪</span> ${p.exercises.length} תרגילים: ${names}${p.exercises.length>3?'...':''}</div>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0">
           <button class="btn btn-primary btn-sm" onclick="startFromPlan(${p.id})">▶ התחל</button>

@@ -17,7 +17,7 @@ function renderHistory() {
         <div class="history-name">${w.name}</div>
         <div class="history-summary">${w.exercises.length} תרגילים • ${sets} סטים${w.muscles?.length?' • '+w.muscles.join(', '):''}</div>
       </div>
-      <button onclick="deleteWorkout(${w.id})" style="position:absolute;top:50%;left:12px;transform:translateY(-50%);background:rgba(255,101,132,0.1);border:1px solid rgba(255,101,132,0.3);color:var(--accent2);border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;font-family:Rubik,sans-serif;font-weight:600">🗑 מחק</button>
+      <button onclick="deleteWorkout(${w.id})" style="position:absolute;top:50%;left:12px;transform:translateY(-50%);background:var(--accent2-glow);border:1px solid rgba(255,107,107,0.25);color:var(--accent2);border-radius:10px;padding:6px 12px;font-size:12px;cursor:pointer;font-family:Rubik,sans-serif;font-weight:600;transition:all 0.15s">🗑</button>
     </div>`;
   }).join('');
 }
@@ -86,8 +86,8 @@ function renderProgressCharts() {
   if(ctx1._chart) ctx1._chart.destroy();
   ctx1._chart = new Chart(ctx1, {
     type:'bar',
-    data:{ labels, datasets:[{ label:'Volume (kg)', data:volumes, backgroundColor:'rgba(108,99,255,0.6)', borderColor:'#6c63ff', borderWidth:2, borderRadius:6 }] },
-    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{ticks:{color:'#9999bb',font:{size:10}}},y:{ticks:{color:'#9999bb',font:{size:10}},grid:{color:'rgba(255,255,255,0.05)'}}} }
+    data:{ labels, datasets:[{ label:'Volume (kg)', data:volumes, backgroundColor:'rgba(108,92,231,0.5)', borderColor:'#6C5CE7', borderWidth:2, borderRadius:8 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{ticks:{color:'#8B95A8',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#8B95A8',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}}} }
   });
 
   const dayLabels = ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];
@@ -97,7 +97,7 @@ function renderProgressCharts() {
   if(ctx2._chart) ctx2._chart.destroy();
   ctx2._chart = new Chart(ctx2, {
     type:'bar',
-    data:{ labels:dayLabels, datasets:[{ data:dayCounts, backgroundColor:'rgba(255,101,132,0.5)', borderColor:'#ff6584', borderWidth:2, borderRadius:4 }] },
+    data:{ labels:dayLabels, datasets:[{ data:dayCounts, backgroundColor:'rgba(255,107,107,0.4)', borderColor:'#FF6B6B', borderWidth:2, borderRadius:6 }] },
     options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{ticks:{color:'#9999bb',font:{size:11}}},y:{ticks:{color:'#9999bb',font:{size:10},stepSize:1},grid:{color:'rgba(255,255,255,0.05)'}}} }
   });
 
@@ -112,8 +112,8 @@ function renderProgressCharts() {
     });
   });
   const muscleColors = {
-    chest:'#6c63ff', back:'#ff6584', shoulders:'#ffd700', biceps:'#43e97b',
-    triceps:'#f093fb', legs:'#4facfe', core:'#fa709a', cardio:'#a18cd1', other:'#9999bb'
+    chest:'#6C5CE7', back:'#FF6B6B', shoulders:'#FECA57', biceps:'#00D2D3',
+    triceps:'#A29BFE', legs:'#00B894', core:'#FD79A8', cardio:'#74B9FF', other:'#8B95A8'
   };
   const mLabels = Object.keys(muscleVolume);
   const mData   = mLabels.map(k => Math.round(muscleVolume[k]));

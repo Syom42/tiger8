@@ -2,7 +2,7 @@
 // Uses Groq's free API (Llama 3 model) — 14,400 requests/day free tier, no billing needed.
 
 // Set your Groq API key in the app settings (stored in localStorage under 'ironlog_groq_key').
-const GROQ_API_KEY = localStorage.getItem('ironlog_groq_key') || '';
+const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
 const GROQ_MODEL   = 'llama-3.3-70b-versatile';
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
@@ -207,19 +207,19 @@ function renderChatHistory() {
 
   if (!chatHistory.length) {
     const introMap = {
-      conquest: `<div style="font-size:48px;margin-bottom:12px">👊💀</div>
-        <div style="font-size:16px;font-weight:700;color:var(--text2);margin-bottom:8px">אני Conquest.</div>
-        <div style="font-size:13px;line-height:1.6">אתה חלש? אתה שמן? אתה עצלן?<br>תגיד לי מה הבעיה שלך ואני אהרוס אותך עד שתהיה גבר.</div>`,
-      guy: `<div style="font-size:48px;margin-bottom:12px">🌈✨</div>
-        <div style="font-size:16px;font-weight:700;color:var(--text2);margin-bottom:8px">היי! אני גיא! 💖</div>
-        <div style="font-size:13px;line-height:1.6">אני גיא ואני גיי. בוא נדבר על אימונים,<br>תזונה או כל דבר שיגרום לך להרגיש מדהים!</div>`
+      conquest: `<div style="font-size:56px;margin-bottom:16px">👊💀</div>
+        <div style="font-size:17px;font-weight:800;color:var(--text);margin-bottom:8px">אני Conquest.</div>
+        <div style="font-size:13px;line-height:1.7;color:var(--text2)">אתה חלש? אתה שמן? אתה עצלן?<br>תגיד לי מה הבעיה שלך ואני אהרוס אותך עד שתהיה גבר.</div>`,
+      guy: `<div style="font-size:56px;margin-bottom:16px">🌈✨</div>
+        <div style="font-size:17px;font-weight:800;color:var(--text);margin-bottom:8px">היי! אני גיא! 💖</div>
+        <div style="font-size:13px;line-height:1.7;color:var(--text2)">אני גיא ואני גיי. בוא נדבר על אימונים,<br>תזונה או כל דבר שיגרום לך להרגיש מדהים!</div>`
     };
     el.innerHTML = `
-      <div style="text-align:center;padding:40px 16px;color:var(--text3)">
+      <div style="text-align:center;padding:48px 16px 32px;color:var(--text3)">
         ${introMap[activePersonality]}
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:0 16px 16px">
-        ${QUICK_ACTIONS.map((a, i) => `<button onclick="sendQuickAction(${i})" style="padding:8px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:Rubik,sans-serif;transition:all 0.2s">${a.label}</button>`).join('')}
+        ${QUICK_ACTIONS.map((a, i) => `<button onclick="sendQuickAction(${i})" style="padding:9px 16px;border-radius:20px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:Rubik,sans-serif;transition:all 0.15s">${a.label}</button>`).join('')}
       </div>`;
     return;
   }
@@ -227,14 +227,14 @@ function renderChatHistory() {
   el.innerHTML = chatHistory.map(msg => {
     const isUser = msg.role === 'user';
     const bubbleStyle = isUser
-      ? 'background:var(--accent);color:#fff;margin-left:auto;border-radius:18px 18px 18px 4px;'
-      : 'background:var(--bg2);border:1px solid var(--border);color:var(--text);margin-right:auto;border-radius:18px 18px 4px 18px;';
+      ? 'background:linear-gradient(135deg,#6C5CE7,#A29BFE);color:#fff;margin-left:auto;border-radius:18px 18px 4px 18px;box-shadow:0 4px 12px rgba(108,92,231,0.2);'
+      : 'background:var(--bg3);border:1px solid var(--border);color:var(--text);margin-right:auto;border-radius:18px 18px 18px 4px;';
 
     let suggestionHtml = '';
     if (msg.suggestion) {
       const s = msg.suggestion;
       suggestionHtml = `
-        <div id="suggestion-${msg.id}" style="margin-top:10px;background:rgba(108,99,255,0.08);border:1px solid var(--accent);border-radius:12px;padding:12px">
+        <div id="suggestion-${msg.id}" style="margin-top:10px;background:rgba(108,92,231,0.08);border:1px solid var(--border-accent);border-radius:14px;padding:14px">
           <div style="font-size:12px;color:var(--text2);margin-bottom:6px">💡 Plan Change Suggestion</div>
           <div style="font-size:13px;font-weight:700;margin-bottom:10px">
             ${s.day} • Swap <span style="color:var(--accent2)">${s.old}</span> → <span style="color:var(--accent3)">${s.new}</span>
@@ -247,11 +247,11 @@ function renderChatHistory() {
     }
 
     return `
-      <div style="display:flex;flex-direction:column;margin-bottom:12px;max-width:85%;${isUser ? 'align-self:flex-end' : 'align-self:flex-start'}">
-        <div style="font-size:12px;color:var(--text3);margin-bottom:4px;${isUser ? 'text-align:left' : 'text-align:right'}">
+      <div style="display:flex;flex-direction:column;margin-bottom:14px;max-width:82%;${isUser ? 'align-self:flex-end' : 'align-self:flex-start'}">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:600;${isUser ? 'text-align:left' : 'text-align:right'}">
           ${isUser ? (DB.user?.name || 'אתה') : `${p.emoji} ${p.name}`}
         </div>
-        <div style="padding:12px 14px;font-size:14px;line-height:1.6;${bubbleStyle}">
+        <div style="padding:13px 16px;font-size:14px;line-height:1.7;${bubbleStyle}">
           ${msg.text.replace(/\n/g, '<br>')}
         </div>
         ${suggestionHtml}

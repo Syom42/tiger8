@@ -29,7 +29,7 @@ function showToast(msg, type='success') {
     toast.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:12px 20px;border-radius:12px;font-size:14px;font-weight:600;z-index:9999;transition:opacity 0.3s;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,0.15);font-family:Rubik,sans-serif';
     document.body.appendChild(toast);
   }
-  toast.style.background = type==='success'?'#22c55e':type==='error'?'#ff6584':'#6c63ff';
+  toast.style.background = type==='success'?'#00D2D3':type==='error'?'#FF6B6B':'#6C5CE7';
   toast.style.color = '#fff';
   toast.textContent = msg;
   toast.style.opacity = '1';

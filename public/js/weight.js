@@ -30,8 +30,8 @@ function renderWeight() {
   if(logs.length>0) {
     weightChartInstance = new Chart(ctx, {
       type:'line',
-      data:{ labels:logs.map(l=>new Date(l.date).toLocaleDateString(undefined,{month:'numeric',day:'numeric'})), datasets:[{ data:logs.map(l=>l.weight), borderColor:'#43e97b', backgroundColor:'rgba(67,233,123,0.1)', fill:true, tension:0.4, pointBackgroundColor:'#43e97b', pointRadius:4 }] },
-      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{ticks:{color:'#9999bb',font:{size:10}}},y:{ticks:{color:'#9999bb',font:{size:10}},grid:{color:'rgba(255,255,255,0.05)'}}} }
+      data:{ labels:logs.map(l=>new Date(l.date).toLocaleDateString(undefined,{month:'numeric',day:'numeric'})), datasets:[{ data:logs.map(l=>l.weight), borderColor:'#00D2D3', backgroundColor:'rgba(0,210,211,0.08)', fill:true, tension:0.4, pointBackgroundColor:'#00D2D3', pointRadius:4, borderWidth:2.5 }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{ticks:{color:'#8B95A8',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#8B95A8',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}}} }
     });
   }
 

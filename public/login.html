@@ -3,24 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<meta name="theme-color" content="#0A0F1D">
+<meta name="theme-color" content="#0B0E14">
 <title>Tiger8 — כניסה</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 input, button { font-family: 'Rubik', sans-serif; }
 
 :root {
-  --bg:      #0A0F1D;
-  --bg2:     #131B2F;
-  --bg3:     #1D2843;
-  --border:  rgba(148,163,184,0.12);
-  --accent:  #3B82F6;
-  --accent2: #EF4444;
-  --text:    #F8FAFC;
-  --text2:   #94A3B8;
-  --text3:   #64748B;
+  --bg:      #0B0E14;
+  --bg2:     #12161F;
+  --bg3:     #1A1F2E;
+  --border:  rgba(255,255,255,0.06);
+  --accent:  #6C5CE7;
+  --accent2: #FF6B6B;
+  --text:    #F5F6FA;
+  --text2:   #8B95A8;
+  --text3:   #5A6478;
 }
 
 html, body {
@@ -46,16 +47,16 @@ body {
   margin-bottom: 36px;
 }
 .brand-icon {
-  width: 56px;
-  height: 56px;
-  background: linear-gradient(135deg, var(--accent) 0%, #6366F1 100%);
-  border-radius: 18px;
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #6C5CE7 0%, #A29BFE 100%);
+  border-radius: 20px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 26px;
-  margin-bottom: 14px;
-  box-shadow: 0 8px 24px rgba(59,130,246,0.3);
+  font-size: 30px;
+  margin-bottom: 16px;
+  box-shadow: 0 12px 32px rgba(108,92,231,0.35);
 }
 .brand-name {
   font-size: 28px;
@@ -140,7 +141,7 @@ body {
 .field input::placeholder { color: var(--text3); }
 .field input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+  box-shadow: 0 0 0 3px rgba(108,92,231,0.2);
 }
 .field input:focus:invalid { border-color: var(--accent2); box-shadow: 0 0 0 3px rgba(239,68,68,0.12); }
 
@@ -148,18 +149,19 @@ body {
 .submit-btn {
   margin-top: 6px;
   width: 100%;
-  padding: 14px;
+  padding: 15px;
   border: none;
-  border-radius: 10px;
-  background: var(--accent);
+  border-radius: 14px;
+  background: linear-gradient(135deg, #6C5CE7 0%, #A29BFE 100%);
   color: #fff;
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
   letter-spacing: -0.01em;
-  transition: opacity 0.15s ease, transform 0.1s ease;
+  transition: opacity 0.15s ease, transform 0.1s ease, box-shadow 0.2s ease;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 4px 16px rgba(108,92,231,0.3);
 }
 .submit-btn:active { transform: scale(0.98); }
 .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
