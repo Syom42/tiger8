@@ -2,10 +2,13 @@ const { bcrypt, signSession, setSessionCookie, clearSessionCookie, requireSessio
 const { sql } = require('../_lib/db');
 
 function getGoogleConfig() {
+  // APP_URL must be set in Vercel env vars to the stable production domain,
+  // e.g. https://tiger8.vercel.app — never use VERCEL_URL (changes per deployment).
+  const base = process.env.APP_URL || 'http://localhost:3000';
   return {
     clientId: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    redirectUri: (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000') + '/api/auth/google-callback',
+    redirectUri: base + '/api/auth/google-callback',
   };
 }
 
