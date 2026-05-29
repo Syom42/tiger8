@@ -1028,15 +1028,13 @@ select {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .profile-tab-header {
-  position: sticky;
-  top: 0;                          /* ← was top: 20px */
+  position: relative;   /* ← was sticky */
+  top: unset;           /* ← remove top offset */
   z-index: 20;
   background: var(--bg);
   padding: 8px 0 10px;
   margin: 0 -16px;
   padding-inline: 16px;
-  backdrop-filter: blur(12px);     /* ← new */
-  -webkit-backdrop-filter: blur(12px);
 }
 [data-theme="light"] .profile-tab-header {
   background: var(--bg);
