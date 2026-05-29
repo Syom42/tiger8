@@ -58,7 +58,9 @@ export async function getSession(c) {
 export async function requireAuth(c, next) {
   const session = await getSession(c);
   if (!session) throw new HTTPException(401, { message: 'unauthorized' });
-  c.set('uid', session.uid);
+  // Coerce to number — old JWTs (signed by the pre-v2 backend) stored uid as a
+  // string because @vercel/postgres returns bigint columns as strings.
+  c.set('uid', Number(session.uid));
   c.set('email', session.email);
   await next();
 }
