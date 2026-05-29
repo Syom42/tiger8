@@ -165,7 +165,7 @@ a { color: var(--accent-light); text-decoration: none; }
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 20px 16px 100px;
+  padding: calc(env(safe-area-inset-top, 12px) + 20px) 16px 100px;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
 }
@@ -1028,13 +1028,11 @@ select {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .profile-tab-header {
-  position: relative;   /* ← was sticky */
-  top: unset;           /* ← remove top offset */
+  position: relative;
   z-index: 20;
   background: var(--bg);
-  padding: 8px 0 10px;
+  padding: calc(env(safe-area-inset-top, 12px) + 8px) 16px 10px;
   margin: 0 -16px;
-  padding-inline: 16px;
 }
 [data-theme="light"] .profile-tab-header {
   background: var(--bg);
