@@ -1033,6 +1033,9 @@ select {
   background: var(--bg);
   padding: 12px 16px 10px;   /* ← simple fixed padding, no env() */
   margin: -20px -16px 16px;  /* ← pull it to the edges and add space below */
+  border-left: none;
+  outline: none;
+  overflow: hidden;
 }
 [data-theme="light"] .profile-tab-header {
   background: var(--bg);
