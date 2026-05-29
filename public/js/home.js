@@ -66,7 +66,7 @@ function renderWeekCalendar() {
     const el = document.createElement('div');
     const stateClass = hasWorkout ? 'has-workout' : planName && !isRest ? 'has-plan' : 'empty';
     el.className = 'day-cell ' + stateClass + (isToday ? ' today' : '');
-    el.style.cssText = `position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px;min-height:56px;cursor:pointer;transition:transform 0.15s;overflow:hidden;width:100%;`;
+    el.style.cssText = `position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px;min-height:56px;cursor:pointer;transition:transform 0.15s;width:100%;`;
 
     el.onclick = () => showDayFullDetails(d, dayWorkouts, planName, matchingPlan, isRest);
 
