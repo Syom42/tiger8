@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 const schema = z.object({
   // Database (provided automatically by Vercel/Neon integration)
-  POSTGRES_URL: z.string().url(),
+  POSTGRES_URL: z.string().min(1, 'POSTGRES_URL is required'),
 
   // Session signing
   JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 characters'),
