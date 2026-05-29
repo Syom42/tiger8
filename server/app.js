@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import { onError } from './middleware/error.js';
 
 import config       from './routes/config.js';
+import init         from './routes/init.js';
 import auth         from './routes/auth.js';
 import profile      from './routes/profile.js';
 import weekPlan     from './routes/weekPlan.js';
@@ -17,6 +18,7 @@ import coach        from './routes/coach.js';
 export const app = new Hono().basePath('/api');
 
 app.route('/', config);
+app.route('/', init);
 app.route('/', auth);
 app.route('/', profile);
 app.route('/', weekPlan);

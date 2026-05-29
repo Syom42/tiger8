@@ -44,35 +44,11 @@ function apiFetchBeacon(path, opts = {}) {
 // ─── Load ─────────────────────────────────────────────────────────────────────
 
 async function loadDB() {
-  const MAX_RETRIES = 2;
-
-  async function fetchSection(path, fallback) {
-    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-      try {
-        const r = await apiFetch(path);
-        if (!r) return fallback; // 401 redirect
-        return await r.json();
-      } catch (e) {
-        console.warn(`[Tiger8] load ${path} attempt ${attempt + 1} failed:`, e.message);
-        if (attempt === MAX_RETRIES) return fallback;
-        await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
-      }
-    }
-    return fallback;
-  }
-
   try {
-    const [profile, serverExercises, workouts, plans, weekPlan, prs, weightLog, supplements] =
-      await Promise.all([
-        fetchSection('/api/profile', {}),
-        fetchSection('/api/exercises', []),
-        fetchSection('/api/workouts', []),
-        fetchSection('/api/plans', []),
-        fetchSection('/api/week-plan', { sun:'', mon:'', tue:'', wed:'', thu:'', fri:'', sat:'' }),
-        fetchSection('/api/prs', {}),
-        fetchSection('/api/weight', []),
-        fetchSection('/api/supplements', []),
-      ]);
+    const r = await apiFetch('/api/init');
+    if (!r) return; // 401 → redirected to login
+
+    const { profile, exercises: serverExercises, workouts, plans, weekPlan, prs, weight: weightLog, supplements } = await r.json();
 
     DB.user = {
       email: profile.email || '',
