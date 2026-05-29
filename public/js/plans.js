@@ -114,6 +114,24 @@ function renderPlans() {
 function startFromPlan(id) {
   const plan = DB.plans.find(p=>p.id===id);
   if(!plan) return;
+
+  // Warn if there's an active workout in progress
+  if (activeWorkout) {
+    showDialog({
+      icon: '⚠️',
+      title: 'אימון פעיל קיים',
+      msg: `"${activeWorkout.name}" עדיין רץ. להתחיל אימון חדש?`,
+      buttons: [
+        { label: 'ביטול' },
+        { label: 'התחל חדש', primary: true, action: () => { _doStartFromPlan(plan); } }
+      ]
+    });
+    return;
+  }
+  _doStartFromPlan(plan);
+}
+
+function _doStartFromPlan(plan) {
   activeWorkout = {
     name: plan.name, muscles: [],
     exercises: plan.exercises.map(ex => {

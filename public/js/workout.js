@@ -59,7 +59,23 @@ function startNewWorkout() {
   const name = document.getElementById('newWorkoutName').value.trim();
   if(!name) { showToast('הזן שם לאימון ✏️', 'error'); return; }
   if(!newWorkoutExercises.length) { showToast('הוסף לפחות תרגיל אחד 💪', 'error'); return; }
-  
+
+  if (activeWorkout) {
+    showDialog({
+      icon: '⚠️',
+      title: 'אימון פעיל קיים',
+      msg: `"${activeWorkout.name}" עדיין רץ. להתחיל אימון חדש?`,
+      buttons: [
+        { label: 'ביטול' },
+        { label: 'התחל חדש', primary: true, action: () => { _doStartNewWorkout(name); } }
+      ]
+    });
+    return;
+  }
+  _doStartNewWorkout(name);
+}
+
+function _doStartNewWorkout(name) {
   activeWorkout = {
     name, muscles: [...selectedMuscles],
     exercises: newWorkoutExercises.map(ex => ({
@@ -148,7 +164,9 @@ function renderWorkoutScreen() {
 function addSet(ei) {
   activeWorkout.exercises[ei].sets.push({reps:'',weight:'',done:false});
   localStorage.setItem('ironlog_active_workout', JSON.stringify(activeWorkout));
+  const _liveVal = document.getElementById('liveExInput')?.value || '';
   renderWorkoutScreen();
+  const _inp = document.getElementById('liveExInput'); if (_inp) _inp.value = _liveVal;
 }
 
 function removeSet(ei, si) {
@@ -156,14 +174,18 @@ function removeSet(ei, si) {
   if(activeWorkout.exercises[ei].sets.length <= 1) { showToast('לא ניתן להסיר את הסט האחרון', 'error'); return; }
   activeWorkout.exercises[ei].sets.splice(si, 1);
   localStorage.setItem('ironlog_active_workout', JSON.stringify(activeWorkout));
+  const _liveVal = document.getElementById('liveExInput')?.value || '';
   renderWorkoutScreen();
+  const _inp = document.getElementById('liveExInput'); if (_inp) _inp.value = _liveVal;
 }
 
 function removeExerciseFromWorkout(ei) {
   if(!activeWorkout) return;
   activeWorkout.exercises.splice(ei, 1);
   localStorage.setItem('ironlog_active_workout', JSON.stringify(activeWorkout));
+  const _liveVal = document.getElementById('liveExInput')?.value || '';
   renderWorkoutScreen();
+  const _inp = document.getElementById('liveExInput'); if (_inp) _inp.value = _liveVal;
 }
 
 function addExerciseDuringWorkout() {
@@ -181,7 +203,10 @@ function updateSet(ei,si,field,val) {
   if(activeWorkout) {
     // Validate: only positive numbers
     const num = parseFloat(val);
-    if (val !== '' && (isNaN(num) || num < 0)) return;
+    if (val !== '' && (isNaN(num) || num < 0)) {
+      showToast('ערך לא תקין – הזן מספר חיובי', 'error');
+      return;
+    }
     activeWorkout.exercises[ei].sets[si][field] = val === '' ? '' : num;
     localStorage.setItem('ironlog_active_workout', JSON.stringify(activeWorkout));
   }

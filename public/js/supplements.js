@@ -24,7 +24,20 @@ function renderSupplementReminders() {
     return nowMins >= dueMins - 60;
   });
 
-  if (!due.length) { el.innerHTML = ''; el.style.display = 'none'; return; }
+  if (!due.length) {
+    // Show CTA if user has no supplements at all
+    if (!DB.supplements || !DB.supplements.length) {
+      el.style.display = 'block';
+      el.innerHTML = `
+        <div class="card" style="border:1px dashed var(--border);text-align:center;padding:16px">
+          <div style="font-size:13px;color:var(--text3)">💊 הוסף תוספי תזונה למעקב יומי</div>
+          <button class="btn btn-ghost btn-sm" onclick="showScreen('user');switchProfileTab('supps')" style="margin-top:8px">הגדר תוספים</button>
+        </div>`;
+    } else {
+      el.innerHTML = ''; el.style.display = 'none';
+    }
+    return;
+  }
   el.style.display = 'block';
 
   el.innerHTML = `

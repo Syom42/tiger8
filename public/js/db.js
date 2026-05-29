@@ -90,6 +90,10 @@ async function loadDB() {
   } catch (e) {
     console.error('[Tiger8] loadDB failed:', e);
     DB = { ...DB_DEFAULTS };
+    // Show user-facing error after splash hides
+    setTimeout(() => {
+      showToast('שגיאה בטעינת הנתונים – בדוק חיבור לאינטרנט', 'error');
+    }, 500);
   }
 
   migrateDB();
@@ -116,6 +120,18 @@ let _saving = false;
 let _flushPromise = null;
 let _retryCount = 0;
 const MAX_SYNC_RETRIES = 3;
+let _syncHideTimer = null;
+
+function _showSyncStatus(state) {
+  const el = document.getElementById('syncIndicator');
+  if (!el) return;
+  el.className = 'sync-indicator ' + state;
+  el.textContent = state === 'syncing' ? '⟳ שומר...' : state === 'saved' ? '✓ נשמר' : '✕ שגיאה';
+  clearTimeout(_syncHideTimer);
+  if (state !== 'syncing') {
+    _syncHideTimer = setTimeout(() => { el.className = 'sync-indicator'; }, 2000);
+  }
+}
 
 function saveDB() {
   clearTimeout(_saveTimer);
@@ -131,6 +147,7 @@ async function flushSave() {
   _saving = true;
   const keys = [..._dirty];
   _dirty.clear();
+  _showSyncStatus('syncing');
   _flushPromise = (async () => {
     try {
       const results = await Promise.allSettled(keys.map(key => syncSection(key)));
@@ -147,6 +164,7 @@ async function flushSave() {
       if (!anyFailed) {
         LOADED = JSON.parse(JSON.stringify(DB));
         _retryCount = 0;
+        _showSyncStatus('saved');
       } else {
         // Update LOADED only for the sections that succeeded
         const succeeded = keys.filter((_, i) => results[i].status === 'fulfilled');
@@ -157,10 +175,12 @@ async function flushSave() {
         }
         _retryCount++;
         if (_retryCount <= MAX_SYNC_RETRIES) {
+          _showSyncStatus('syncing');
           // Schedule retry with backoff
           setTimeout(flushSave, 1000 * _retryCount);
         } else {
           _retryCount = 0;
+          _showSyncStatus('error');
           showToast('שגיאה בשמירה – נסה שוב מאוחר יותר', 'error');
         }
       }

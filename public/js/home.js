@@ -23,7 +23,7 @@ function calcStreak() {
   const days = DB.workouts.map(w => { const dd = new Date(w.date); dd.setHours(0,0,0,0); return dd.getTime(); });
   while(true) {
     if(days.includes(d.getTime())) { streak++; d.setDate(d.getDate()-1); }
-    else if(streak===0 && d.getTime()===today.getTime()-86400000) { d.setDate(d.getDate()-1); if(!days.includes(d.getTime())) break; }
+    else if(streak===0 && d.getTime()===today.getTime()) { d.setDate(d.getDate()-1); }
     else break;
   }
   return streak;
@@ -77,20 +77,20 @@ function renderWeekCalendar() {
     el.appendChild(lbl);
 
     if (hasWorkout) {
-      // Completed — show check + workout name
+      // Completed — show check + compact name
       const check = document.createElement('div');
       check.textContent = '✅';
-      check.style.fontSize = '13px';
+      check.style.fontSize = '14px';
       el.appendChild(check);
       const nameTag = document.createElement('div');
-      const short = dayWorkouts[0].name.length > 6 ? dayWorkouts[0].name.substring(0,6) + '…' : dayWorkouts[0].name;
+      const short = dayWorkouts[0].name.length > 4 ? dayWorkouts[0].name.substring(0,4) + '…' : dayWorkouts[0].name;
       nameTag.textContent = short;
-      nameTag.style.cssText = 'font-size:10px;font-weight:700;padding:2px 4px;border-radius:3px;text-align:center;max-width:100%;overflow:hidden;background:rgba(16,185,129,0.2);color:var(--accent3);';
+      nameTag.style.cssText = 'font-size:11px;font-weight:700;padding:2px 3px;border-radius:3px;text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:rgba(16,185,129,0.2);color:var(--accent3);';
       el.appendChild(nameTag);
       if (dayWorkouts.length > 1) {
         const badge = document.createElement('div');
         badge.textContent = '+' + (dayWorkouts.length - 1);
-        badge.style.cssText = 'font-size:10px;font-weight:700;color:var(--accent3);';
+        badge.style.cssText = 'font-size:11px;font-weight:700;color:var(--accent3);';
         el.appendChild(badge);
       }
     } else if (isRest) {
@@ -99,21 +99,12 @@ function renderWeekCalendar() {
       tag.style.fontSize = '13px';
       el.appendChild(tag);
     } else if (planName) {
-      // Has a plan — show plan name + first 2 exercises
+      // Has a plan — show plan name only (compact)
       const planTag = document.createElement('div');
-      const short = planName.length > 6 ? planName.substring(0,6) + '…' : planName;
+      const short = planName.length > 4 ? planName.substring(0,4) + '…' : planName;
       planTag.textContent = short;
-      planTag.style.cssText = 'font-size:10px;font-weight:700;padding:2px 4px;border-radius:3px;text-align:center;max-width:100%;overflow:hidden;background:rgba(59,130,246,0.18);color:var(--accent);line-height:1.3';
+      planTag.style.cssText = 'font-size:11px;font-weight:700;padding:2px 3px;border-radius:3px;text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:rgba(59,130,246,0.18);color:var(--accent);line-height:1.3';
       el.appendChild(planTag);
-      if (matchingPlan && matchingPlan.exercises.length) {
-        const exPreview = document.createElement('div');
-        exPreview.textContent = matchingPlan.exercises.slice(0,2).map(e => {
-          const n = typeof e === 'string' ? e : (e.name || '');
-          return n.length > 5 ? n.substring(0,5) + '…' : n;
-        }).join(', ');
-        exPreview.style.cssText = 'font-size:9px;color:var(--text3);text-align:center;max-width:100%;overflow:hidden;line-height:1.2';
-        el.appendChild(exPreview);
-      }
     } else if (isToday) {
       const dot = document.createElement('div');
       dot.style.cssText = 'width:5px;height:5px;border-radius:50%;background:var(--accent);margin-top:2px;opacity:0.6;';

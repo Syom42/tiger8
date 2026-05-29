@@ -25,6 +25,9 @@
 
 <div class="app">
 
+<!-- SYNC INDICATOR -->
+<div class="sync-indicator" id="syncIndicator"></div>
+
 <!-- ACTIVE WORKOUT BADGE -->
 <div class="active-badge" id="activeBadge">⚡ אימון פעיל</div>
 
@@ -294,8 +297,8 @@
       <div class="header-sub" id="coachPersonalityLabel">👊 Conquest — המאמן האגרסיבי</div>
     </div>
     <div style="display:flex;gap:6px">
-      <button onclick="switchPersonality('conquest')" id="btnConquest" class="btn btn-sm" style="padding:6px 10px;font-size:16px;border-radius:50%;background:var(--accent);border:none;cursor:pointer">👊</button>
-      <button onclick="switchPersonality('guy')" id="btnGuy" class="btn btn-sm" style="padding:6px 10px;font-size:16px;border-radius:50%;background:var(--bg3);border:1px solid var(--border);cursor:pointer">🌈</button>
+      <button onclick="switchPersonality('conquest')" id="btnConquest" class="btn btn-sm" style="padding:6px 10px;font-size:16px;border-radius:50%;background:var(--accent);border:none;cursor:pointer" aria-label="Conquest - המאמן האגרסיבי" title="Conquest">👊</button>
+      <button onclick="switchPersonality('guy')" id="btnGuy" class="btn btn-sm" style="padding:6px 10px;font-size:16px;border-radius:50%;background:var(--bg3);border:1px solid var(--border);cursor:pointer" aria-label="Guy - המאמן השמח" title="Guy">🌈</button>
     </div>
   </div>
 
@@ -332,7 +335,7 @@
 </nav>
 
 <!-- REST TIMER -->
-<div class="timer-overlay" id="restTimer">
+<div class="timer-overlay" id="restTimer" onclick="if(event.target===this)stopTimer()">
   <div class="timer-label">⏱️ מנוחה</div>
   <div class="timer-display" id="timerDisplay">01:30</div>
   <div class="progress-bar"><div class="progress-fill" id="timerProgress" style="width:100%"></div></div>
