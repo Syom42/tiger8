@@ -46,7 +46,7 @@
     </div>
   </div>
 
-  <button class="btn btn-primary btn-full" onclick="showModal('modal-start-choice')" style="margin-bottom:20px">
+  <button class="btn btn-primary btn-full" onclick="showModal('modal-start-choice')" style="margin-bottom:clamp(10px, 3vw, 20px)">
     <span>⚡</span> התחל אימון
   </button>
 
@@ -183,10 +183,12 @@
 
 <!-- ====== USER / PROFILE SCREEN (contains Profile / Weight / Supps tabs) ====== -->
 <div class="screen" id="screen-user">
-  <div class="tabs" style="margin-top:8px">
-    <div class="tab active" onclick="switchProfileTab('profile',this)">פרופיל</div>
-    <div class="tab" onclick="switchProfileTab('weight',this)">משקל</div>
-    <div class="tab" onclick="switchProfileTab('supps',this)">תוספים</div>
+  <div class="profile-tab-header">
+    <div class="tabs profile-tabs" id="profileTabBar">
+      <div class="tab active" onclick="switchProfileTab('profile',this)">פרופיל</div>
+      <div class="tab" onclick="switchProfileTab('weight',this)">משקל</div>
+      <div class="tab" onclick="switchProfileTab('supps',this)">תוספים</div>
+    </div>
   </div>
 
   <!-- ---- PROFILE TAB ---- -->

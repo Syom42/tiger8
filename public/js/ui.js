@@ -122,11 +122,11 @@ function switchProfileTab(tab, clickedEl) {
     if (el) el.style.display = t === tab ? '' : 'none';
   });
   // Update tab pill highlights
-  const screen = document.getElementById('screen-user');
-  if (screen) {
-    screen.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+  const tabBar = document.getElementById('profileTabBar');
+  if (tabBar) {
+    tabBar.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     const labels = { profile: 'פרופיל', weight: 'משקל', supps: 'תוספים' };
-    screen.querySelectorAll('.tabs .tab').forEach(t => {
+    tabBar.querySelectorAll('.tab').forEach(t => {
       if (t.textContent.trim() === labels[tab]) t.classList.add('active');
     });
   }

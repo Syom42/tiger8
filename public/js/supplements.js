@@ -46,16 +46,16 @@ function renderSupplementReminders() {
       ${due.map(s => {
         const taken = (s.takenDates || []).includes(todayKey);
         return `
-          <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
-            <div style="flex:1">
-              <div style="font-weight:700;font-size:14px;${taken ? 'text-decoration:line-through;color:var(--text3)' : ''}">${sanitize(s.name)}</div>
-              <div style="font-size:13px;color:var(--text3)">${sanitize(s.dose || '')} · ${sanitize(s.time || '')}</div>
+          <div class="supp-reminder-row ${taken ? 'taken' : ''}">
+            <div class="supp-reminder-info">
+              <div class="supp-reminder-name ${taken ? 'done' : ''}">${sanitize(s.name)}</div>
+              <div class="supp-reminder-meta">${sanitize(s.dose || '')} · ${sanitize(s.time || '')}</div>
             </div>
-            <button onclick="toggleSupplementTaken('${sanitize(s.id)}')"
-              style="width:44px;height:44px;border-radius:50%;border:2px solid ${taken ? 'var(--accent3)' : 'var(--border)'};
-                     background:${taken ? 'var(--accent3-glow)' : 'transparent'};
-                     color:${taken ? 'var(--accent3)' : 'var(--text3)'};font-size:18px;cursor:pointer;transition:all 0.2s;flex-shrink:0">
-              ${taken ? '✓' : '○'}
+            <button class="supp-check-btn ${taken ? 'checked' : ''}" onclick="toggleSupplementTaken('${sanitize(s.id)}')">
+              <svg class="supp-check-svg" viewBox="0 0 36 36">
+                <circle class="supp-check-ring" cx="18" cy="18" r="16"/>
+                <polyline class="supp-check-mark" points="11,18 16,23 25,13"/>
+              </svg>
             </button>
           </div>`;
       }).join('')}
@@ -64,6 +64,7 @@ function renderSupplementReminders() {
 
 function toggleSupplementTaken(id) {
   const todayKey = new Date().toISOString().slice(0, 10);
+  let wasTaken = false;
   db.update(d => {
     const s = d.supplements.find(x => x.id === id);
     if (!s) return;
@@ -71,13 +72,16 @@ function toggleSupplementTaken(id) {
     const idx = s.takenDates.indexOf(todayKey);
     if (idx === -1) {
       s.takenDates.push(todayKey);
-      // Keep only last 30 days to avoid bloat
       s.takenDates = s.takenDates.slice(-30);
+      wasTaken = true;
     } else {
       s.takenDates.splice(idx, 1);
     }
   });
+  // Haptic feedback
+  if (navigator.vibrate) navigator.vibrate(wasTaken ? [30, 20, 30] : [15]);
   renderSupplementReminders();
+  syncSuppScheduleToSW();
 }
 
 // ── Supplement management screen ─────────────────────────────────────────────
@@ -158,11 +162,83 @@ function saveSupplement() {
 // ── Browser Notifications ─────────────────────────────────────────────────────
 function requestNotificationPermission() {
   if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
+    Notification.requestPermission().then(perm => {
+      if (perm === 'granted') {
+        registerSupplementSW();
+        showToast('🔔 התראות הופעלו!');
+      }
+    });
   }
 }
 
+// ── Service Worker Registration & Schedule Sync ──────────────────────────────
+let _swRegistration = null;
+
+async function registerSupplementSW() {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    _swRegistration = await navigator.serviceWorker.register('/sw.js');
+    console.log('[Tiger8] SW registered for notifications');
+    // Listen for messages from SW (e.g. SUPP_TAKEN action from notification)
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      if (event.data?.type === 'SUPP_TAKEN') {
+        markSupplementTakenFromSW(event.data.suppId, event.data.todayKey);
+      }
+    });
+    // Try periodic background sync
+    if ('periodicSync' in _swRegistration) {
+      try {
+        await _swRegistration.periodicSync.register('supp-check', { minInterval: 60 * 1000 });
+      } catch { /* not all browsers support this */ }
+    }
+    // Sync schedule immediately
+    syncSuppScheduleToSW();
+  } catch (e) {
+    console.warn('[Tiger8] SW registration failed:', e);
+  }
+}
+
+function syncSuppScheduleToSW() {
+  if (!navigator.serviceWorker?.controller) return;
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const supplements = (DB.supplements || []).map(s => ({
+    id: s.id,
+    name: s.name,
+    dose: s.dose,
+    time: s.time,
+    enabled: s.enabled,
+    takenToday: (s.takenDates || []).includes(todayKey),
+  }));
+  navigator.serviceWorker.controller.postMessage({
+    type: 'UPDATE_SUPP_SCHEDULE',
+    supplements,
+  });
+}
+
+function markSupplementTakenFromSW(suppId, todayKey) {
+  db.update(d => {
+    const s = d.supplements.find(x => x.id === suppId);
+    if (!s) return;
+    if (!s.takenDates) s.takenDates = [];
+    if (!s.takenDates.includes(todayKey)) {
+      s.takenDates.push(todayKey);
+      s.takenDates = s.takenDates.slice(-30);
+    }
+  });
+  renderSupplementReminders();
+  syncSuppScheduleToSW();
+}
+
 function scheduleSupplementNotifications() {
+  // Register SW if permission already granted
+  if ('Notification' in window && Notification.permission === 'granted') {
+    registerSupplementSW();
+  }
+  // Also keep the fallback setTimeout approach for when SW isn't ready
+  _scheduleSupplementTimeouts();
+}
+
+function _scheduleSupplementTimeouts() {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
   const todayKey = new Date().toISOString().slice(0, 10);
@@ -180,14 +256,13 @@ function scheduleSupplementNotifications() {
 
     if (msUntil > 0 && msUntil < 24 * 60 * 60 * 1000) {
       setTimeout(() => {
-        if (document.hidden) { // only notify when app is in background
+        if (document.hidden) {
           new Notification('💊 Tiger8 — Supplement Reminder', {
             body: `Time to take ${s.name}${s.dose ? ' · ' + s.dose : ''}`,
-            icon: '/favicon.ico',
+            icon: '/icon-192.png',
             tag: 'supp-' + s.id
           });
         }
-        // Also refresh the home screen reminder cards
         renderSupplementReminders();
       }, msUntil);
     }
