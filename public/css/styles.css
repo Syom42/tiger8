@@ -164,20 +164,15 @@ a { color: var(--accent-light); text-decoration: none; }
 }
 .screen.active {
   display: flex;
-  animation: screenIn 0.3s var(--ease-out);
-}
-@keyframes screenIn {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
 }
 .screen::-webkit-scrollbar { width: 3px; }
 .screen::-webkit-scrollbar-track { background: transparent; }
 .screen::-webkit-scrollbar-thumb { background: rgba(124,92,252,0.2); border-radius: 4px; }
 
-.slide-in-left  { animation: slideInL 0.3s var(--ease-out) !important; }
-.slide-in-right { animation: slideInR 0.3s var(--ease-out) !important; }
-@keyframes slideInL { from { transform: translateX(-20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-@keyframes slideInR { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+.slide-in-left  { animation: slideInL 0.15s var(--ease-out) !important; }
+.slide-in-right { animation: slideInR 0.15s var(--ease-out) !important; }
+@keyframes slideInL { from { transform: translateX(-8px); } to { transform: translateX(0); } }
+@keyframes slideInR { from { transform: translateX(8px); } to { transform: translateX(0); } }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    BOTTOM NAVIGATION (.nav)
@@ -1306,21 +1301,7 @@ select {
    STAGGERED ANIMATIONS
    ═══════════════════════════════════════════════════════════════════════════ */
 
-@keyframes cardSlideIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
 
-[id="plansList"] > *,
-[id="historyList"] > * {
-  animation: cardSlideIn 0.35s var(--ease-out) both;
-}
-[id="plansList"] > *:nth-child(2) { animation-delay: 0.05s; }
-[id="plansList"] > *:nth-child(3) { animation-delay: 0.1s; }
-[id="plansList"] > *:nth-child(4) { animation-delay: 0.15s; }
-[id="historyList"] > *:nth-child(2) { animation-delay: 0.05s; }
-[id="historyList"] > *:nth-child(3) { animation-delay: 0.1s; }
-[id="historyList"] > *:nth-child(4) { animation-delay: 0.15s; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    SAFE AREAS
