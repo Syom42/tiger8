@@ -12,7 +12,7 @@ module.exports = async function handler(req, res) {
   if (!session) return;
 
   if (req.method === 'GET') {
-    const supplements = await sql`
+    const { rows: supplements } = await sql`
       select s.id, s.name, s.dose, s.time, s.enabled,
              coalesce(json_agg(st.taken_date) filter (where st.taken_date is not null), '[]') as taken_dates
       from supplements s
