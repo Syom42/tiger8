@@ -132,7 +132,7 @@ body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background: rgba(7,9,15,0.72);
+  background: rgba(7,9,15,0.60);
   pointer-events: none;
   z-index: 0;
 }
@@ -1029,11 +1029,11 @@ select {
 
 .profile-tab-header {
   position: sticky;
-  top: -20px;
-  z-index: 10;
+  top: 20px;
+  z-index: 20;
   background: var(--bg);
-  padding: 20px 0 10px;
-  margin: -20px -16px 0;
+  padding: 8px 0 10px;
+  margin: 0 -16px 0;
   padding-inline: 16px;
 }
 [data-theme="light"] .profile-tab-header {

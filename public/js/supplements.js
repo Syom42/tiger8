@@ -11,12 +11,11 @@ function renderSupplements() {
 function renderNotifStatus() {
   const el = document.getElementById('notifStatus');
   if (!el) return;
-
   if (!('Notification' in window)) {
     el.style.display = 'block';
     el.style.background = 'var(--accent2-glow)';
     el.style.color = 'var(--accent2)';
-    el.innerHTML = 'âš ï¸ ×”×“×¤×“×¤×Ÿ ×œ× ×ª×•×ž×š ×‘×”×ª×¨××•×ª';
+    el.innerHTML = '⚠️ הדפדפן לא תומך בהתראות';
     return;
   }
 
@@ -25,12 +24,12 @@ function renderNotifStatus() {
     el.style.display = 'block';
     el.style.background = 'var(--accent2-glow)';
     el.style.color = 'var(--accent2)';
-    el.innerHTML = 'ðŸš« ×”×ª×¨××•×ª ×—×¡×•×ž×•×ª â€” ×™×© ×œ××¤×©×¨ ×‘×”×’×“×¨×•×ª ×”×“×¤×“×¤×Ÿ';
+    el.innerHTML = '🚫 התראות חסומות — אפשר בהרשאות הדפדפן';
   } else if (perm === 'default') {
     el.style.display = 'block';
     el.style.background = 'rgba(108,92,231,0.15)';
     el.style.color = 'var(--accent)';
-    el.innerHTML = 'ðŸ”” <a href="#" onclick="requestNotificationPermission();return false" style="color:var(--accent);text-decoration:underline">×”×¤×¢×œ ×”×ª×¨××•×ª</a> ×›×“×™ ×œ×§×‘×œ ×ª×–×›×•×¨×•×ª ×œ×ª×•×¡×¤×™×';
+    el.innerHTML = '🔔 <a href="#" onclick="requestNotificationPermission();return false" style="color:var(--accent);text-decoration:underline">הפעל התראות</a> כדי לקבל תזכורות לתוספים';
   } else {
     el.style.display = 'none';
   }
@@ -59,8 +58,8 @@ function renderSupplementReminders() {
       el.style.display = 'block';
       el.innerHTML = `
         <div class="card" style="border:1px dashed var(--border);text-align:center;padding:16px">
-          <div style="font-size:13px;color:var(--text3)">ðŸ’Š ×”×•×¡×£ ×ª×•×¡×¤×™ ×ª×–×•× ×” ×œ×ž×¢×§×‘ ×™×•×ž×™</div>
-          <button class="btn btn-ghost btn-sm" onclick="showScreen('user');switchProfileTab('supps')" style="margin-top:8px">×”×’×“×¨ ×ª×•×¡×¤×™×</button>
+          <div style="font-size:13px;color:var(--text3)">💊 הוסף תוספי תזונה למעקב יומי</div>
+          <button class="btn btn-ghost btn-sm" onclick="showScreen('user');switchProfileTab('supps')" style="margin-top:8px">הגדר תוספים</button>
         </div>`;
     } else {
       el.innerHTML = ''; el.style.display = 'none';
@@ -68,17 +67,16 @@ function renderSupplementReminders() {
     return;
   }
   el.style.display = 'block';
-
   el.innerHTML = `
     <div class="card">
-      <div class="card-title">ðŸ’Š ×ª×•×¡×¤×™ ×”×™×•×</div>
+      <div class="card-title">💊 תוספי היום</div>
       ${due.map(s => {
         const taken = (s.takenDates || []).includes(todayKey);
         return `
           <div class="supp-reminder-row ${taken ? 'taken' : ''}">
             <div class="supp-reminder-info">
               <div class="supp-reminder-name ${taken ? 'done' : ''}">${sanitize(s.name)}</div>
-              <div class="supp-reminder-meta">${sanitize(s.dose || '')} Â· ${sanitize(s.time || '')}</div>
+              <div class="supp-reminder-meta">${sanitize(s.dose || '')} · ${sanitize(s.time || '')}</div>
             </div>
             <button class="supp-check-btn ${taken ? 'checked' : ''}" onclick="toggleSupplementTaken('${sanitize(s.id)}')">
               <svg class="supp-check-svg" viewBox="0 0 36 36">
@@ -119,23 +117,24 @@ function renderSupplementList() {
   if (!el) return;
 
   if (!DB.supplements?.length) {
-    el.innerHTML = `<div style="text-align:center;padding:30px;color:var(--text3);font-size:13px">××™×Ÿ ×ª×•×¡×¤×™× ×¢×“×™×™×Ÿ.<br>×”×§×© + ×›×“×™ ×œ×”×•×¡×™×£.</div>`;
+    el.innerHTML = `<div style="text-align:center;padding:30px;color:var(--text3);font-size:13px">אין תוספים עדיין.<br>הקש + כדי להוסיף.</div>`;
     return;
   }
-
   el.innerHTML = DB.supplements.map(s => `
     <div style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--bg2);border-radius:var(--radius);margin-bottom:8px;border:1px solid var(--border)">
       <div style="flex:1;min-width:0">
         <div style="font-weight:700;font-size:15px">${sanitize(s.name)}</div>
-        <div style="font-size:12px;color:var(--text3);margin-top:2px">${s.dose ? sanitize(s.dose) + ' Â· ' : ''}${sanitize(s.time) || '×œ× × ×§×‘×¢ ×–×ž×Ÿ'}</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px">${s.dose ? sanitize(s.dose) + ' · ' : ''}${sanitize(s.time) || 'לא נקבע זמן'}</div>
       </div>
       <div onclick="toggleSupplementEnabled('${s.id}')"
         style="width:52px;height:30px;border-radius:15px;background:${s.enabled ? 'var(--accent)' : 'var(--bg3)'};
                position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0">
         <div style="position:absolute;top:3px;${s.enabled ? 'right:3px' : 'left:3px'};width:24px;height:24px;border-radius:50%;background:#fff;transition:all 0.2s"></div>
       </div>
+      <button onclick="openEditSupplement('${s.id}')"
+        style="background:none;border:none;color:var(--text);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:16px;min-width:44px;min-height:44px;transition:all 0.15s">✎</button>
       <button onclick="deleteSupplementPrompt('${s.id}')"
-        style="background:var(--accent2-glow);border:none;color:var(--accent2);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:16px;min-width:44px;min-height:44px;transition:all 0.15s">ðŸ—‘</button>
+        style="background:var(--accent2-glow);border:none;color:var(--accent2);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:16px;min-width:44px;min-height:44px;transition:all 0.15s">🗑️</button>
     </div>`).join('');
 }
 
@@ -151,12 +150,12 @@ function deleteSupplementPrompt(id) {
   const s = DB.supplements.find(x => x.id === id);
   if (!s) return;
   showDialog({
-    icon: 'ðŸ—‘ï¸',
-    title: '×ž×—×™×§×ª ×ª×•×¡×£?',
+    icon: '🗑️',
+    title: 'מחיקת תוסף?',
     msg: s.name,
     buttons: [
-      { label: '×‘×™×˜×•×œ' },
-      { label: '×ž×—×§', primary: true, action: () => {
+      { label: 'ביטול' },
+      { label: 'מחק', primary: true, action: () => {
         db.update(d => { d.supplements = d.supplements.filter(x => x.id !== id); });
         renderSupplements();
       }}
@@ -166,9 +165,14 @@ function deleteSupplementPrompt(id) {
 
 // â”€â”€ Add / Edit modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function openAddSupplement() {
+  window._editingSupplementId = null;
   document.getElementById('suppName').value = '';
   document.getElementById('suppDose').value = '';
   document.getElementById('suppTime').value = '08:00';
+  const title = document.querySelector('#modal-supplement .modal-title');
+  if (title) title.textContent = '💊 הוסף תוסף';
+  const btn = document.querySelector('#modal-supplement .btn.btn-primary');
+  if (btn) btn.textContent = '✅ הוסף תוסף';
   showModal('modal-supplement');
 }
 
@@ -176,22 +180,47 @@ function saveSupplement() {
   const name = document.getElementById('suppName').value.trim();
   const dose = document.getElementById('suppDose').value.trim();
   const time = document.getElementById('suppTime').value || '08:00';
-  if (!name) { showToast('×”×–×Ÿ ×©× ×œ×ª×•×¡×£', 'error'); return; }
+  if (!name) { showToast('הזן שם לתוסף', 'error'); return; }
 
-  db.update(d => {
-    d.supplements.push({ id: 'supp_' + Date.now(), name, dose, time, enabled: true, takenDates: [] });
-  });
+  if (window._editingSupplementId) {
+    const id = window._editingSupplementId;
+    db.update(d => {
+      const s = d.supplements.find(x => x.id === id);
+      if (!s) return;
+      s.name = name; s.dose = dose; s.time = time;
+    });
+    window._editingSupplementId = null;
+    showToast('שינויים נשמרו');
+  } else {
+    db.update(d => {
+      d.supplements.push({ id: 'supp_' + Date.now(), name, dose, time, enabled: true, takenDates: [] });
+    });
+    showToast('✅ ' + name + ' נוסף');
+  }
 
   closeModal('modal-supplement');
   renderSupplements();
   requestNotificationPermission();
-  showToast('âœ… ' + name + ' × ×•×¡×£');
+}
+
+function openEditSupplement(id) {
+  const s = (DB.supplements || []).find(x => x.id === id);
+  if (!s) return;
+  window._editingSupplementId = id;
+  document.getElementById('suppName').value = s.name;
+  document.getElementById('suppDose').value = s.dose || '';
+  document.getElementById('suppTime').value = s.time || '08:00';
+  const title = document.querySelector('#modal-supplement .modal-title');
+  if (title) title.textContent = '✏️ ערוך תוסף';
+  const btn = document.querySelector('#modal-supplement .btn.btn-primary');
+  if (btn) btn.textContent = '💾 שמור שינויים';
+  showModal('modal-supplement');
 }
 
 // â”€â”€ Browser Notifications â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function requestNotificationPermission() {
   if (!('Notification' in window)) {
-    showToast('×”×“×¤×“×¤×Ÿ ×œ× ×ª×•×ž×š ×‘×”×ª×¨××•×ª', 'error');
+    showToast('הדפדפן לא תומך בהתראות', 'error');
     return;
   }
   if (Notification.permission === 'granted') {
@@ -202,14 +231,14 @@ function requestNotificationPermission() {
     Notification.requestPermission().then(perm => {
       if (perm === 'granted') {
         registerSupplementSW();
-        showToast('ðŸ”” ×”×ª×¨××•×ª ×”×•×¤×¢×œ×•!');
+        showToast('🔔 התראות הופעלו!');
       } else {
-        showToast('×”×ª×¨××•×ª × ×—×¡×ž×• â€” ××¤×©×¨ ×‘×”×’×“×¨×•×ª ×”×“×¤×“×¤×Ÿ', 'error');
+        showToast('התראות נחסמו — אפשר בהגדרות הדפדפן', 'error');
       }
     });
   }
   if (Notification.permission === 'denied') {
-    showToast('×”×ª×¨××•×ª ×—×¡×•×ž×•×ª â€” ×©× ×” ×‘×”×’×“×¨×•×ª ×”×“×¤×“×¤×Ÿ', 'error');
+    showToast('התראות חסומות — שנה הרשאות בדפדפן', 'error');
   }
 }
 
