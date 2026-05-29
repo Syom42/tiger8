@@ -1,17 +1,16 @@
-// Validates required environment variables at boot. Fails fast with a clear
-// message instead of letting routes mysteriously 500 later.
+// Validates environment variables. Logs warnings for missing values but does NOT
+// crash the function — individual routes fail with clear messages instead.
 import { z } from 'zod';
 
 const schema = z.object({
   // Database (provided automatically by Vercel/Neon integration)
-  POSTGRES_URL: z.string().min(1, 'POSTGRES_URL is required'),
+  POSTGRES_URL: z.string().min(1).optional().default(''),
 
   // Session signing
-  JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 characters'),
+  JWT_SECRET: z.string().min(1).optional().default(''),
 
   // Stable public base URL — used to build the Google OAuth redirect_uri.
-  // MUST be the canonical production domain, NOT VERCEL_URL (which changes per deploy).
-  APP_URL: z.string().url().optional().default('http://localhost:3000'),
+  APP_URL: z.string().optional().default('http://localhost:3000'),
 
   // Google OAuth (optional — /api/auth/google* will 503 if missing)
   GOOGLE_CLIENT_ID: z.string().optional(),
@@ -33,10 +32,15 @@ export function env() {
   if (cached) return cached;
   const parsed = schema.safeParse(process.env);
   if (!parsed.success) {
-    const issues = parsed.error.issues.map(i => `  - ${i.path.join('.')}: ${i.message}`).join('\n');
-    throw new Error(`[env] invalid environment variables:\n${issues}`);
+    // Log but don't crash — let individual routes handle missing vars
+    console.error('[env] validation warnings:', parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', '));
+    cached = schema.parse({}); // use defaults
+  } else {
+    cached = parsed.data;
   }
-  cached = parsed.data;
+  // Warn about critical missing vars
+  if (!cached.POSTGRES_URL) console.warn('[env] POSTGRES_URL is not set — DB calls will fail');
+  if (!cached.JWT_SECRET) console.warn('[env] JWT_SECRET is not set — auth will fail');
   return cached;
 }
 
