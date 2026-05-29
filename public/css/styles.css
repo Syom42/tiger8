@@ -165,7 +165,7 @@ a { color: var(--accent-light); text-decoration: none; }
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: calc(env(safe-area-inset-top, 12px) + 20px) 16px 100px;
+  padding: 20px 16px 100px;   /* ← keep as original, no safe-area change here */
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
 }
@@ -1031,8 +1031,8 @@ select {
   position: relative;
   z-index: 20;
   background: var(--bg);
-  padding: calc(env(safe-area-inset-top, 12px) + 8px) 16px 10px;
-  margin: 0 -16px;
+  padding: 12px 16px 10px;   /* ← simple fixed padding, no env() */
+  margin: -20px -16px 16px;  /* ← pull it to the edges and add space below */
 }
 [data-theme="light"] .profile-tab-header {
   background: var(--bg);

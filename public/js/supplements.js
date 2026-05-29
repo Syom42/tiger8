@@ -308,7 +308,7 @@ function syncSuppScheduleToSW() {
 
 function testNotification() {
   if (!('Notification' in window)) {
-    showToast('×”×“×¤×“×¤×Ÿ ×œ× ×ª×•×ž×š ×‘×”×ª×¨××•×ª', 'error');
+    showToast('הדפדפן לא תומך בהתראות', 'error');
     return;
   }
   if (Notification.permission !== 'granted') {
@@ -320,23 +320,23 @@ function testNotification() {
     navigator.serviceWorker.ready.then(reg => {
       if (reg.active) {
         reg.active.postMessage({ type: 'TEST_NOTIFICATION' });
-        showToast('ðŸ”” ×”×ª×¨××ª ×‘×“×™×§×” × ×©×œ×—×”!');
+        showToast('🔔 התראת בדיקה נשלחה!');
       } else {
         // Fallback: use Notification API directly
-        new Notification('ðŸ’Š Tiger8 â€” ×‘×“×™×§×ª ×”×ª×¨××•×ª', {
-          body: '×”×”×ª×¨××•×ª ×¢×•×‘×“×•×ª! ðŸŽ‰',
+        new Notification('⚡️ Tiger8 — בדיקת התראות', {
+          body: 'התראות עובדות! 🎉',
           icon: '/tiger8-icon.png',
           tag: 'supp-test',
         });
-        showToast('ðŸ”” ×”×ª×¨××ª ×‘×“×™×§×” × ×©×œ×—×”!');
+        showToast('🔔 התראת בדיקה נשלחה!');
       }
     });
   } else {
-    new Notification('ðŸ’Š Tiger8 â€” ×‘×“×™×§×ª ×”×ª×¨××•×ª', {
-      body: '×”×”×ª×¨××•×ª ×¢×•×‘×“×•×ª! ðŸŽ‰',
+    new Notification('⚡️ Tiger8 — בדיקת התראות', {
+      body: 'התראות עובדות! 🎉',
       tag: 'supp-test',
     });
-    showToast('ðŸ”” ×”×ª×¨××ª ×‘×“×™×§×” × ×©×œ×—×”!');
+    showToast('🔔 התראת בדיקה נשלחה!');
   }
 }
 
