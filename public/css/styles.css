@@ -178,9 +178,14 @@ a { color: var(--accent-light); text-decoration: none; }
 
 .slide-in-left  { animation: slideInL 0.15s var(--ease-out) !important; }
 .slide-in-right { animation: slideInR 0.15s var(--ease-out) !important; }
-@keyframes slideInL { from { transform: translateX(-8px); } to { transform: translateX(0); } }
-@keyframes slideInR { from { transform: translateX(8px); } to { transform: translateX(0); } }
-
+@keyframes slideInL { 
+  from { transform: translateX(-12px); opacity: 0; } 
+  to   { transform: translateX(0); opacity: 1; } 
+}
+@keyframes slideInR { 
+  from { transform: translateX(12px); opacity: 0; } 
+  to   { transform: translateX(0); opacity: 1; } 
+}
 /* ═══════════════════════════════════════════════════════════════════════════
    BOTTOM NAVIGATION (.nav)
    ═══════════════════════════════════════════════════════════════════════════ */
