@@ -401,4 +401,20 @@ function chatInputKeydown(e) {
     e.preventDefault();
     sendCoachMessage();
   }
+  // Auto-expand textarea
+  setTimeout(() => autoExpandChatInput(e.target), 0);
 }
+
+function autoExpandChatInput(el) {
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+// Attach auto-expand on input too
+document.addEventListener('DOMContentLoaded', () => {
+  const chatInput = document.getElementById('chatInput');
+  if (chatInput) {
+    chatInput.addEventListener('input', () => autoExpandChatInput(chatInput));
+  }
+});

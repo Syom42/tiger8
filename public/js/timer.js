@@ -7,7 +7,7 @@ let restTimeTotal = 0;
 function startRestTimer(seconds=90) {
   stopTimer();
   restTimeLeft = seconds; restTimeTotal = seconds;
-  document.getElementById('restTimer').style.display='block';
+  document.getElementById('restTimer').style.display='flex';
   updateTimerDisplay();
   restTimerInterval = setInterval(() => {
     restTimeLeft--;

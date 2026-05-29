@@ -1,12 +1,19 @@
 // ============ WEIGHT TRACKING ============
 
-function saveWeight() {
+async function saveWeight() {
   const w = parseFloat(document.getElementById('weightInput').value);
   if(!w||w<20||w>300) { showToast('הזן משקל תקין (20-300 ק"ג)', 'error'); return; }
-  db.update(d => {
-    d.weightLog.push({ weight: w, date: document.getElementById('weightDate').value, note: document.getElementById('weightNote').value });
-    d.weightLog.sort((a, b) => new Date(a.date) - new Date(b.date));
-  }, { immediate: true });
+  try {
+    await db.update(d => {
+      d.weightLog.push({ weight: w, date: document.getElementById('weightDate').value, note: document.getElementById('weightNote').value });
+      d.weightLog.sort((a, b) => new Date(a.date) - new Date(b.date));
+    }, { immediate: true });
+    showToast('משקל נשמר ✅');
+  } catch (e) {
+    console.error('saveWeight failed', e);
+    showToast('שגיאה בשמירה, נסה שוב', 'error');
+    return;
+  }
   closeModal('modal-add-weight');
   document.getElementById('weightInput').value=''; document.getElementById('weightNote').value='';
   renderWeight();
@@ -55,5 +62,9 @@ function renderWeight() {
 
 function initWeightDate() {
   const d = document.getElementById('weightDate');
-  if(d) d.value = new Date().toISOString().split('T')[0];
+  if(d) {
+    const today = new Date().toISOString().split('T')[0];
+    d.value = today;
+    d.max = today; // Prevent future dates
+  }
 }

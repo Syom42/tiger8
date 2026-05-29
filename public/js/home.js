@@ -30,9 +30,12 @@ function calcStreak() {
 }
 
 function workoutsThisWeek() {
-  const now = new Date(); const day = now.getDay();
-  const monday = new Date(now); monday.setDate(now.getDate() - day); monday.setHours(0,0,0,0);
-  return DB.workouts.filter(w => new Date(w.date) >= monday).length;
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun
+  const sunday = new Date(now);
+  sunday.setDate(now.getDate() - day);
+  sunday.setHours(0, 0, 0, 0);
+  return DB.workouts.filter(w => new Date(w.date) >= sunday).length;
 }
 
 function renderWeekCalendar() {
@@ -149,18 +152,20 @@ function showDayFullDetails(dateObj, workouts, planName, plan, isRest) {
       let durationStr = '—';
       if (wo.endTime && wo.startTime) {
         durationStr = Math.round((wo.endTime - wo.startTime) / 60000) + ' דקות';
+      } else if (wo.duration) {
+        durationStr = Math.round(wo.duration / 60) + ' דקות';
       }
       const exList = (wo.exercises || []).map(ex =>
-        `<li style="padding:7px 0;border-bottom:1px solid var(--border);font-size:14px;">${ex.name} <span style="color:var(--text3);font-size:13px;">– ${(ex.sets||[]).length} סטים</span></li>`
+        `<li style="padding:7px 0;border-bottom:1px solid var(--border);font-size:14px;">${sanitize(ex.name)} <span style="color:var(--text3);font-size:13px;">– ${(ex.sets||[]).length} סטים</span></li>`
       ).join('');
       inner += `
         <div style="background:var(--bg3);border-radius:14px;padding:14px;margin-bottom:12px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-            <div style="font-weight:700;font-size:16px;">💪 ${wo.name}</div>
+            <div style="font-weight:700;font-size:16px;">💪 ${sanitize(wo.name)}</div>
             <div style="font-size:13px;color:var(--text3);">${durationStr}</div>
           </div>
           <ul style="list-style:none;padding:0;margin:0;">${exList || '<li style="color:var(--text3);font-size:13px;">אין פירוט</li>'}</ul>
-          <button onclick="showWorkoutDetail('${wo.id}');document.getElementById('day-detail-panel').remove()" style="margin-top:10px;width:100%;padding:8px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-family:Rubik,sans-serif;font-weight:600;font-size:13px;cursor:pointer;">פרטים מלאים ›</button>
+          <button onclick="showWorkoutDetail('${Number(wo.id)}');document.getElementById('day-detail-panel').remove()" style="margin-top:10px;width:100%;padding:8px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-family:Rubik,sans-serif;font-weight:600;font-size:13px;cursor:pointer;">פרטים מלאים ›</button>
         </div>`;
     });
   }
@@ -173,14 +178,14 @@ function showDayFullDetails(dateObj, workouts, planName, plan, isRest) {
       </div>`;
     if (plan) {
       const exList = (plan.exercises || []).map(ex =>
-        `<li style="padding:7px 0;border-bottom:1px solid var(--border);font-size:14px;">${ex.name || ex} ${ex.sets ? '<span style="color:var(--text3);font-size:13px;">('+ex.sets.length+' סט)</span>' : ''}</li>`
+        `<li style="padding:7px 0;border-bottom:1px solid var(--border);font-size:14px;">${sanitize(ex.name || ex)} ${ex.sets ? '<span style="color:var(--text3);font-size:13px;">('+ex.sets.length+' סט)</span>' : ''}</li>`
       ).join('');
       inner += `<div style="background:var(--bg3);border-radius:14px;padding:14px;opacity:${isCompleted ? 0.7 : 1};">
-        <div style="font-weight:700;font-size:15px;margin-bottom:8px;">${planName}</div>
+        <div style="font-weight:700;font-size:15px;margin-bottom:8px;">${sanitize(planName)}</div>
         <ul style="list-style:none;padding:0;margin:0;">${exList}</ul>
       </div>`;
     } else {
-      inner += `<div style="color:var(--text3);font-size:14px;padding:8px 0;">${planName}</div>`;
+      inner += `<div style="color:var(--text3);font-size:14px;padding:8px 0;">${sanitize(planName)}</div>`;
     }
     inner += `</div>`;
   } else if (isRest) {

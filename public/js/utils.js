@@ -24,17 +24,16 @@ function clearData() {
   saveDB(); renderHome(); renderUserScreen(); renderWorkoutScreen();
 }
 
-/* THEME TOGGLE LOGIC */
+/* THEME TOGGLE LOGIC — stored in localStorage (no server sync needed) */
 function toggleTheme() {
-  db.update(d => {
-    const currentTheme = d.theme || 'dark';
-    d.theme = currentTheme === 'dark' ? 'light' : 'dark';
-  });
+  const current = localStorage.getItem('tiger8_theme') || 'dark';
+  const next = current === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('tiger8_theme', next);
   applyTheme();
 }
 
 function applyTheme() {
-  const currentTheme = DB.theme || 'dark';
+  const currentTheme = localStorage.getItem('tiger8_theme') || 'dark';
   document.documentElement.setAttribute('data-theme', currentTheme);
   
   const themeVal = document.getElementById('themeValDisplay');
@@ -45,3 +44,50 @@ function applyTheme() {
 
 // Ensure theme is applied on load
 setTimeout(applyTheme, 0);
+
+/* ONBOARDING LOGIC */
+function showOnboarding() {
+  showModal('modal-onboarding');
+}
+
+function completeOnboarding() {
+  const name = document.getElementById('onboardName').value.trim();
+  const goal = document.getElementById('onboardGoal').value;
+  const level = document.getElementById('onboardLevel').value;
+
+  db.update(d => {
+    if (name) d.user.name = name;
+    d.user.goal = goal;
+  }, { immediate: true });
+
+  localStorage.setItem('tiger8_onboarded', '1');
+
+  // Suggest a template based on level
+  const templateMap = { beginner: 'full_body', intermediate: 'upper_lower', advanced: 'ppl' };
+  const suggestedTemplate = templateMap[level] || 'full_body';
+
+  closeModal('modal-onboarding');
+  renderHome();
+  renderUserScreen();
+
+  // Show template suggestion
+  setTimeout(() => {
+    showDialog({
+      icon: '📋',
+      title: 'תבנית אימון מומלצת',
+      msg: `בהתאם לרמה שלך, אנחנו ממליצים על תבנית "${ROUTINE_TEMPLATES[suggestedTemplate]?.nameHe || suggestedTemplate}". רוצה להחיל אותה?`,
+      buttons: [
+        { label: 'אולי אחר כך' },
+        { label: 'החל תבנית', primary: true, action: () => {
+          showModal('modal-routine-template');
+          setTimeout(() => previewTemplate(suggestedTemplate), 100);
+        }}
+      ]
+    });
+  }, 400);
+}
+
+function skipOnboarding() {
+  localStorage.setItem('tiger8_onboarded', '1');
+  closeModal('modal-onboarding');
+}

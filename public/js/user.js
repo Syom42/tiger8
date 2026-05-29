@@ -11,14 +11,21 @@ function renderUserScreen() {
   document.getElementById('profileStreak').textContent    = calcStreak();
 }
 
-function saveProfile() {
-  db.update(d => {
-    if (!d.user) d.user = { name: '', age: null, height: null, goal: 'strength', joined: new Date().toISOString() };
-    d.user.name   = document.getElementById('editName').value   || d.user.name;
-    d.user.age    = document.getElementById('editAge').value || null;
-    d.user.height = document.getElementById('editHeight').value || null;
-    d.user.goal   = document.getElementById('editGoal').value || 'strength';
-  }, { immediate: true });
+async function saveProfile() {
+  try {
+    await db.update(d => {
+      if (!d.user) d.user = { name: '', age: null, height: null, goal: 'strength', joined: new Date().toISOString() };
+      d.user.name   = document.getElementById('editName').value   || d.user.name;
+      d.user.age    = document.getElementById('editAge').value || null;
+      d.user.height = document.getElementById('editHeight').value || null;
+      d.user.goal   = document.getElementById('editGoal').value || 'strength';
+    }, { immediate: true });
+    showToast('הפרופיל עודכן ✅');
+  } catch (e) {
+    console.error('saveProfile failed', e);
+    showToast('שגיאה בשמירה, נסה שוב', 'error');
+    return;
+  }
   renderUserScreen();
   renderHome();
   closeModal('modal-edit-profile');

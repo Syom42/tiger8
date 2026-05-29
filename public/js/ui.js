@@ -1,6 +1,12 @@
 // ============ UI HELPERS ============
 // Dialogs, toasts, modals, navigation
 
+// XSS sanitizer — escapes HTML special characters in user-provided strings
+function sanitize(str) {
+  if (str == null) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
 function showDialog({ icon='', title='', msg='', buttons=[] }) {
   document.getElementById('custom-dialog-icon').textContent = icon;
   document.getElementById('custom-dialog-title').textContent = title;

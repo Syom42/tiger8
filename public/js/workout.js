@@ -106,7 +106,8 @@ function renderWorkoutScreen() {
     <div class="exercise-item">
       <div class="ex-header" style="display:flex;align-items:flex-start;justify-content:space-between">
         <div>
-          <div class="ex-name">${ex.name}</div>
+          <div class="ex-name">${sanitize(exHebrewName(ex.name))}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">${EX_NAME_HE[ex.name] ? sanitize(ex.name) : ''}</div>
           <div style="display:flex;align-items:center;gap:5px;margin-top:5px">
             <span style="font-size:12px;color:var(--text3)">⏱ מנוחה:</span>
             <input type="number" value="${ex.restSeconds || 90}" min="15" max="600" step="5"
@@ -178,7 +179,10 @@ function addExerciseDuringWorkout() {
 
 function updateSet(ei,si,field,val) {
   if(activeWorkout) {
-    activeWorkout.exercises[ei].sets[si][field] = val;
+    // Validate: only positive numbers
+    const num = parseFloat(val);
+    if (val !== '' && (isNaN(num) || num < 0)) return;
+    activeWorkout.exercises[ei].sets[si][field] = val === '' ? '' : num;
     localStorage.setItem('ironlog_active_workout', JSON.stringify(activeWorkout));
   }
 }
@@ -201,13 +205,16 @@ function toggleSetDone(ei,si,btn) {
 function finishWorkout() {
   if(!activeWorkout) return;
   clearInterval(workoutTimer);
-  const duration = Math.floor((Date.now()-workoutStart)/1000);
+  const endTime = Date.now();
+  const duration = Math.floor((endTime - workoutStart)/1000);
   const workout = {
     id: Date.now(),
     name: activeWorkout.name,
     muscles: activeWorkout.muscles,
     date: new Date().toISOString(),
     duration,
+    startTime: workoutStart,
+    endTime: endTime,
     exercises: activeWorkout.exercises
   };
   db.update(d => {
@@ -266,12 +273,12 @@ function renderStartChoicePlans() {
   section.innerHTML = `<div class="card-title" style="margin-bottom:10px">📋 מתוכנית שמורה</div><div id="startChoicePlanList"></div>`;
   const list = document.getElementById('startChoicePlanList');
   list.innerHTML = DB.plans.map(p => `
-    <div onclick="startFromPlanAndClose(${p.id})" style="display:flex;align-items:center;gap:14px;padding:13px 14px;background:var(--bg3);border-radius:var(--radius-sm);margin-bottom:8px;cursor:pointer;border:1px solid transparent;transition:all 0.2s" 
+    <div onclick="startFromPlanAndClose(${Number(p.id)})" style="display:flex;align-items:center;gap:14px;padding:13px 14px;background:var(--bg3);border-radius:var(--radius-sm);margin-bottom:8px;cursor:pointer;border:1px solid transparent;transition:all 0.2s" 
       onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='transparent'">
       <div style="width:40px;height:40px;background:rgba(108,99,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🏋️</div>
       <div style="flex:1;min-width:0">
-        <div style="font-weight:700;font-size:15px;margin-bottom:2px">${p.name}</div>
-        <div style="font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.exercises.length} תרגילים${p.desc?' • '+p.desc:''}</div>
+        <div style="font-weight:700;font-size:15px;margin-bottom:2px">${sanitize(p.name)}</div>
+        <div style="font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.exercises.length} תרגילים${p.desc?' • '+sanitize(p.desc):''}</div>
       </div>
       <div style="color:var(--accent);font-size:20px">›</div>
     </div>

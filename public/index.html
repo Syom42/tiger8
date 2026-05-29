@@ -16,6 +16,13 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 </head>
 <body>
+<!-- Loading splash -->
+<div id="loadingSplash" style="position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#07090F;gap:16px;transition:opacity 0.3s">
+  <div style="font-size:36px;font-weight:900;background:linear-gradient(135deg,#7C5CFC,#4F46E5,#818CF8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Tiger8</div>
+  <div style="width:40px;height:40px;border:3px solid rgba(124,92,252,0.2);border-top-color:#7C5CFC;border-radius:50%;animation:spin 0.8s linear infinite"></div>
+  <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+</div>
+
 <div class="app">
 
 <!-- ACTIVE WORKOUT BADGE -->
@@ -586,6 +593,38 @@
     <div id="custom-dialog-title" style="font-size:18px;font-weight:800;text-align:center;color:var(--text);margin-bottom:8px"></div>
     <div id="custom-dialog-msg" style="font-size:14px;color:var(--text2);text-align:center;line-height:1.5;margin-bottom:32px"></div>
     <div id="custom-dialog-btns" style="display:flex;gap:12px;flex-direction:column"></div>
+  </div>
+</div>
+
+<!-- ONBOARDING MODAL -->
+<div class="modal-overlay" id="modal-onboarding">
+  <div class="modal" style="position:relative;text-align:center">
+    <div style="font-size:48px;margin-bottom:12px">🐯</div>
+    <div class="modal-title" style="text-align:center">!ברוך הבא ל-Tiger8</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:24px;line-height:1.6">בוא נגדיר את הפרופיל שלך כדי שנוכל להתאים את האפליקציה אליך</div>
+    <div class="input-group">
+      <label>שם</label>
+      <input type="text" id="onboardName" placeholder="איך קוראים לך?">
+    </div>
+    <div class="input-group">
+      <label>מטרת אימון</label>
+      <select id="onboardGoal">
+        <option value="strength">כוח 💪</option>
+        <option value="muscle">עלייה במסה 🏋️</option>
+        <option value="fat">ירידה בשומן 🔥</option>
+        <option value="endurance">סיבולת 🏃</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label>רמת ניסיון</label>
+      <select id="onboardLevel">
+        <option value="beginner">מתחיל</option>
+        <option value="intermediate">בינוני</option>
+        <option value="advanced">מתקדם</option>
+      </select>
+    </div>
+    <button class="btn btn-primary btn-full" style="margin-top:16px" onclick="completeOnboarding()">🚀 בואו נתחיל!</button>
+    <button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="skipOnboarding()">דלג</button>
   </div>
 </div>
 

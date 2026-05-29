@@ -40,21 +40,31 @@ function renderPlanExList() {
   ).join('');
 }
 
-function savePlan() {
+async function savePlan() {
   const name = document.getElementById('planName').value.trim();
   if(!name) return;
+  // Prevent duplicate plan names
+  const duplicate = DB.plans.find(p => p.name === name && p.id !== editingPlanId);
+  if (duplicate) { showToast('כבר קיימת תוכנית בשם זה', 'error'); return; }
   const desc = document.getElementById('planDesc').value;
   const exercises = [...planExList_arr];
-  if (editingPlanId) {
-    const eid = editingPlanId;
-    db.update(d => {
-      const plan = d.plans.find(p => p.id === eid);
-      if (plan) { plan.name = name; plan.desc = desc; plan.exercises = exercises; }
-    }, { immediate: true });
-  } else {
-    db.update(d => {
-      d.plans.push({ id: Date.now(), name, desc, exercises });
-    }, { immediate: true });
+  try {
+    if (editingPlanId) {
+      const eid = editingPlanId;
+      await db.update(d => {
+        const plan = d.plans.find(p => p.id === eid);
+        if (plan) { plan.name = name; plan.desc = desc; plan.exercises = exercises; }
+      }, { immediate: true });
+    } else {
+      await db.update(d => {
+        d.plans.push({ id: Date.now(), name, desc, exercises });
+      }, { immediate: true });
+    }
+    showToast('התוכנית נשמרה ✅');
+  } catch (e) {
+    console.error('savePlan failed', e);
+    showToast('שגיאה בשמירה, נסה שוב', 'error');
+    return;
   }
   editingPlanId = null;
   planExList_arr = [];
@@ -82,19 +92,19 @@ function renderPlans() {
     return;
   }
   el.innerHTML = DB.plans.map(p => {
-    const names = p.exercises.slice(0,3).map(e => normalizeExercise(e).name).join(', ');
+    const names = p.exercises.slice(0,3).map(e => sanitize(normalizeExercise(e).name)).join(', ');
     return `
     <div class="card" style="cursor:pointer;border-left:3px solid var(--accent)">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div style="flex:1;min-width:0">
-          <div style="font-size:17px;font-weight:800;margin-bottom:4px;letter-spacing:-0.02em">${p.name}</div>
-          ${p.desc?`<div style="font-size:12px;color:var(--text2);margin-bottom:8px">${p.desc}</div>`:''}
+          <div style="font-size:17px;font-weight:800;margin-bottom:4px;letter-spacing:-0.02em">${sanitize(p.name)}</div>
+          ${p.desc?`<div style="font-size:12px;color:var(--text2);margin-bottom:8px">${sanitize(p.desc)}</div>`:''}
           <div style="font-size:12px;color:var(--text3);display:flex;align-items:center;gap:4px"><span style="color:var(--accent-light)">💪</span> ${p.exercises.length} תרגילים: ${names}${p.exercises.length>3?'...':''}</div>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0">
-          <button class="btn btn-primary btn-sm" onclick="startFromPlan(${p.id})">▶ התחל</button>
-          <button class="btn btn-ghost btn-sm" onclick="editPlan(${p.id})">✏️</button>
-          <button class="btn btn-danger btn-sm" onclick="deletePlan(${p.id})">✕</button>
+          <button class="btn btn-primary btn-sm" onclick="startFromPlan(${Number(p.id)})">▶ התחל</button>
+          <button class="btn btn-ghost btn-sm" onclick="editPlan(${Number(p.id)})">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="deletePlan(${Number(p.id)})">✕</button>
         </div>
       </div>
     </div>`;

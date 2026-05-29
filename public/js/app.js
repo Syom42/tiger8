@@ -14,4 +14,13 @@ window.onload = async () => {
   initModalCloseOnBackdrop();
   attachExerciseAutocomplete('planExInput', name => addExToPlanByName(name));
   attachExerciseAutocomplete('newExInput', name => addExerciseToNewByName(name));
+
+  // Check if first-launch onboarding is needed
+  if (!DB.user.name && !localStorage.getItem('tiger8_onboarded')) {
+    showOnboarding();
+  }
+
+  // Hide loading splash
+  const splash = document.getElementById('loadingSplash');
+  if (splash) { splash.style.opacity = '0'; setTimeout(() => splash.remove(), 300); }
 };

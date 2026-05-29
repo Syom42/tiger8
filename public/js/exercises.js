@@ -1,5 +1,47 @@
 // ============ EXERCISE LIBRARY & ROUTINE TEMPLATES ============
 
+// Hebrew name lookup for exercises
+const EX_NAME_HE = {
+  'Bench Press':'לחיצת חזה','Incline Bench Press':'לחיצת חזה משופע','Decline Bench Press':'לחיצת חזה שיפוע שלילי',
+  'Dumbbell Flyes':'פרפר משקולות','Incline Dumbbell Press':'לחיצה משופעת משקולות','Cable Crossover':'כבל צולב',
+  'Chest Dip':'מקבילים חזה','Push-Up':'שכיבות שמיכה','Pec Deck':'מכונת פרפר','Dumbbell Pullover':'פולאובר',
+  'Deadlift':'מתים','Pull-Up':'מתח עליון','Chin-Up':'מתח צ׳ין','Barbell Row':'חתירה עם מוט',
+  'Dumbbell Row':'חתירה חד צדדית','T-Bar Row':'חתירת טי-בר','Lat Pulldown':'מתיחה עליונה',
+  'Seated Cable Row':'חתירת כבל ישיבה','Rack Pull':'משיכה חלקית','Good Morning':'גוד מורנינג',
+  'Hyperextension':'היפראקסטנשן','Straight-Arm Pulldown':'מתיחה ישרה',
+  'Overhead Press':'לחיצת כתפיים','Dumbbell Shoulder Press':'לחיצת כתפיים משקולות','Arnold Press':'לחיצת ארנולד',
+  'Lateral Raise':'הרמות צד','Front Raise':'הרמות קדמיות','Rear Delt Fly':'פרפר אחורי',
+  'Face Pull':'פייס פול','Upright Row':'חתירה זקופה','Shrugs':'שרגס','Cable Lateral Raise':'הרמת צד כבל',
+  'Barbell Curl':'כפיפות מוט','Dumbbell Curl':'כפיפות משקולות','Hammer Curl':'כפיפות פטיש',
+  'Incline Dumbbell Curl':'כפיפות משופע','Cable Curl':'כפיפות כבל','Preacher Curl':'כפיפות פריצ׳ר',
+  'Concentration Curl':'כפיפות ריכוז','Spider Curl':'כפיפות ספיידר','EZ-Bar Curl':'כפיפות EZ',
+  'Tricep Pushdown':'לחיצת כבל טרי','Overhead Tricep Extension':'הארכה מעל הראש',
+  'Skull Crusher':'סקאל קראשר','Tricep Dip':'מקבילים טרי','Close-Grip Bench Press':'לחיצה צרה',
+  'Cable Kickback':'קיקבק כבל','Diamond Push-Up':'שכיבות יהלום',
+  'Squat':'סקוואט','Front Squat':'סקוואט קדמי','Romanian Deadlift':'מתים רומני',
+  'Leg Press':'מכבש רגליים','Leg Curl':'כפיפת ירך','Leg Extension':'יישור ברך',
+  'Hip Thrust':'היפ ת׳ראסט','Calf Raise':'הרמת עקבים','Seated Calf Raise':'הרמת עקבים ישיבה',
+  'Bulgarian Split Squat':'סקוואט בולגרי','Hack Squat':'האק סקוואט','Sumo Deadlift':'מתים סומו',
+  'Goblet Squat':'גובלט סקוואט','Lunges':'לאנג׳ס','Step-Up':'סטפ-אפ','Glute Bridge':'גשר ישבן',
+  'Plank':'פלאנק','Crunch':'כפיפות בטן','Sit-Up':'סיט-אפ','Leg Raise':'הרמות רגליים',
+  'Russian Twist':'רוסיאן טוויסט','Ab Rollout':'גלגל בטן','Cable Crunch':'כפיפות כבל',
+  'Hanging Leg Raise':'הרמת רגליים בתליה','Side Plank':'פלאנק צידי','Mountain Climber':'מטפסי הרים','Dead Bug':'דד באג',
+  'Treadmill Run':'ריצה על הליכון','Rowing Machine':'מכונת חתירה','Stationary Bike':'אופני כושר',
+  'Jump Rope':'קפיצה בחבל','Battle Ropes':'חבלי קרב','Box Jump':'קפיצה על קופסה',
+  'Burpee':'ברפי','Stair Climber':'מטפס מדרגות'
+};
+
+// Helper: get display name (Hebrew + English)
+function exDisplayName(name) {
+  const he = EX_NAME_HE[name];
+  return he ? `${he} (${name})` : name;
+}
+
+// Helper: get just the Hebrew name if it exists
+function exHebrewName(name) {
+  return EX_NAME_HE[name] || name;
+}
+
 const EXERCISE_LIBRARY = [
   // ── CHEST ──
   { id: 'e1', name: 'Bench Press', muscle: 'chest', desc: 'Flat barbell press, king of chest exercises', isCustom: false },
@@ -269,13 +311,17 @@ function attachExerciseAutocomplete(inputId, onSelect) {
   wrapper.appendChild(dropdown);
 
   function renderDropdown(q) {
-    const matches = (DB.exercises || []).filter(e => e.name.toLowerCase().includes(q.toLowerCase())).slice(0, 10);
+    const ql = q.toLowerCase();
+    const matches = (DB.exercises || []).filter(e =>
+      e.name.toLowerCase().includes(ql) || (EX_NAME_HE[e.name] || '').includes(q)
+    ).slice(0, 10);
     if (!matches.length) { dropdown.style.display = 'none'; return; }
     dropdown.innerHTML = matches.map(e => {
       const safe = e.name.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       const label = _muscleLabels[e.muscle] || e.muscle;
+      const he = EX_NAME_HE[e.name] || '';
       return `<div data-name="${safe}" style="padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px;display:flex;justify-content:space-between;align-items:center" onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background=''">
-        <span style="font-weight:600">${safe}</span>
+        <span style="font-weight:600">${he ? he + ' <span style=\"color:var(--text3);font-weight:400;font-size:11px\">' + safe + '</span>' : safe}</span>
         <span style="font-size:11px;color:var(--text3);flex-shrink:0;margin-right:8px">${label}</span>
       </div>`;
     }).join('');

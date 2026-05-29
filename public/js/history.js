@@ -12,12 +12,12 @@ function renderHistory() {
     const dur = w.duration ? `${Math.floor(w.duration/60)} דק'` : '';
     const sets = w.exercises.reduce((a,ex)=>a+ex.sets.filter(s=>s.reps||s.weight).length,0);
     return `<div class="history-item" style="position:relative;padding-left:80px">
-      <div onclick="showWorkoutDetail(${w.id})">
+      <div onclick="showWorkoutDetail(${Number(w.id)})">
         <div class="history-date">${d} ${dur?'• '+dur:''}</div>
-        <div class="history-name">${w.name}</div>
-        <div class="history-summary">${w.exercises.length} תרגילים • ${sets} סטים${w.muscles?.length?' • '+w.muscles.join(', '):''}</div>
+        <div class="history-name">${sanitize(w.name)}</div>
+        <div class="history-summary">${w.exercises.length} תרגילים • ${sets} סטים${w.muscles?.length?' • '+sanitize(w.muscles.join(', ')):''}</div>
       </div>
-      <button onclick="deleteWorkout(${w.id})" style="position:absolute;top:50%;left:12px;transform:translateY(-50%);background:var(--accent2-glow);border:1px solid rgba(255,107,107,0.25);color:var(--accent2);border-radius:10px;padding:6px 12px;font-size:12px;cursor:pointer;font-family:Rubik,sans-serif;font-weight:600;transition:all 0.15s">🗑</button>
+      <button onclick="deleteWorkout(${Number(w.id)})" style="position:absolute;top:50%;left:12px;transform:translateY(-50%);background:var(--accent2-glow);border:1px solid rgba(255,107,107,0.25);color:var(--accent2);border-radius:10px;padding:6px 12px;font-size:12px;cursor:pointer;font-family:Rubik,sans-serif;font-weight:600;transition:all 0.15s">🗑</button>
     </div>`;
   }).join('');
 }
@@ -30,10 +30,23 @@ function deleteWorkout(id) {
     buttons: [
       { label: 'ביטול' },
       { label: 'מחק', primary: true, action: () => {
-        DB.workouts = DB.workouts.filter(w=>w.id!==id);
-        DB.prs = {};
-        DB.workouts.forEach(w=>updatePRs(w));
-        saveDB();
+        db.update(d => {
+          d.workouts = d.workouts.filter(w => w.id !== Number(id));
+          // Recalculate PRs from remaining workouts
+          d.prs = {};
+          d.workouts.forEach(w => {
+            (w.exercises || []).forEach(ex => {
+              (ex.sets || []).forEach(set => {
+                if (!set.weight || !set.reps) return;
+                const weight = parseFloat(set.weight), reps = parseInt(set.reps);
+                if (!d.prs[ex.name] || weight > d.prs[ex.name].weight ||
+                    (weight === d.prs[ex.name].weight && reps > d.prs[ex.name].reps)) {
+                  d.prs[ex.name] = { weight, reps, date: w.date };
+                }
+              });
+            });
+          });
+        }, { immediate: true });
         renderHistory();
         renderHome();
         showToast('האימון נמחק');
@@ -43,23 +56,24 @@ function deleteWorkout(id) {
 }
 
 function showWorkoutDetail(id) {
-  const w = DB.workouts.find(x=>x.id===id);
+  const w = DB.workouts.find(x => x.id === Number(id));
   if(!w) return;
   const el = document.getElementById('workoutDetailContent');
   const d = new Date(w.date).toLocaleDateString('he-IL');
   const dur = w.duration ? ` \u2022 ${Math.floor(w.duration/60)}m ${w.duration%60}s` : '';
   el.innerHTML = `
-    <div style="font-size:20px;font-weight:800;margin-bottom:4px">${w.name}</div>
+    <div style="font-size:20px;font-weight:800;margin-bottom:4px">${sanitize(w.name)}</div>
     <div style="font-size:13px;color:var(--text2);margin-bottom:20px">${d}${dur}</div>
     ${w.exercises.map(ex => `
       <div style="margin-bottom:16px">
-        <div style="font-weight:700;font-size:15px;margin-bottom:8px;color:var(--accent)">${ex.name}</div>
+        <div style="font-weight:700;font-size:15px;margin-bottom:8px;color:var(--accent)">${sanitize(typeof exHebrewName !== 'undefined' ? exHebrewName(ex.name) : ex.name)}</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:6px">${typeof EX_NAME_HE !== 'undefined' && EX_NAME_HE[ex.name] ? sanitize(ex.name) : ''}</div>
         ${ex.sets.filter(s=>s.reps||s.weight).map((s,i)=>`
           <div style="display:flex;gap:12px;font-size:13px;padding:5px 0;border-bottom:1px solid var(--border)">
             <span style="color:var(--text3)">סט ${i+1}</span>
-            <span style="font-weight:600">${s.weight||0} ק"ג</span>
+            <span style="font-weight:600">${sanitize(s.weight||0)} ק"ג</span>
             <span style="color:var(--text2)">&times;</span>
-            <span style="font-weight:600">${s.reps||0} חזרות</span>
+            <span style="font-weight:600">${sanitize(s.reps||0)} חזרות</span>
             ${s.done?'<span style="color:var(--accent3)">&check;</span>':''}
           </div>`).join('')}
       </div>

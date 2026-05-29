@@ -35,10 +35,10 @@ function renderSupplementReminders() {
         return `
           <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
             <div style="flex:1">
-              <div style="font-weight:700;font-size:14px;${taken ? 'text-decoration:line-through;color:var(--text3)' : ''}">${s.name}</div>
-              <div style="font-size:13px;color:var(--text3)">${s.dose || ''} · ${s.time || ''}</div>
+              <div style="font-weight:700;font-size:14px;${taken ? 'text-decoration:line-through;color:var(--text3)' : ''}">${sanitize(s.name)}</div>
+              <div style="font-size:13px;color:var(--text3)">${sanitize(s.dose || '')} · ${sanitize(s.time || '')}</div>
             </div>
-            <button onclick="toggleSupplementTaken('${s.id}')"
+            <button onclick="toggleSupplementTaken('${sanitize(s.id)}')"
               style="width:44px;height:44px;border-radius:50%;border:2px solid ${taken ? 'var(--accent3)' : 'var(--border)'};
                      background:${taken ? 'var(--accent3-glow)' : 'transparent'};
                      color:${taken ? 'var(--accent3)' : 'var(--text3)'};font-size:18px;cursor:pointer;transition:all 0.2s;flex-shrink:0">
@@ -80,8 +80,8 @@ function renderSupplementList() {
   el.innerHTML = DB.supplements.map(s => `
     <div style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--bg2);border-radius:var(--radius);margin-bottom:8px;border:1px solid var(--border)">
       <div style="flex:1;min-width:0">
-        <div style="font-weight:700;font-size:15px">${s.name}</div>
-        <div style="font-size:12px;color:var(--text3);margin-top:2px">${s.dose ? s.dose + ' · ' : ''}${s.time || 'לא נקבע זמן'}</div>
+        <div style="font-weight:700;font-size:15px">${sanitize(s.name)}</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px">${s.dose ? sanitize(s.dose) + ' · ' : ''}${sanitize(s.time) || 'לא נקבע זמן'}</div>
       </div>
       <div onclick="toggleSupplementEnabled('${s.id}')"
         style="width:52px;height:30px;border-radius:15px;background:${s.enabled ? 'var(--accent)' : 'var(--bg3)'};
