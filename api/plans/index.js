@@ -2,6 +2,7 @@ const { requireSession, readJsonBody } = require('../_lib/auth');
 const { sql } = require('../_lib/db');
 
 module.exports = async function handler(req, res) {
+  try {
   const session = await requireSession(req, res);
   if (!session) return;
 
@@ -28,19 +29,30 @@ module.exports = async function handler(req, res) {
     const { id, name, description, exercises } = await readJsonBody(req);
     if (!id || !name) return res.status(400).json({ error: 'id, name required' });
 
-    await sql`
-      insert into plans (id, user_id, name, description)
-      values (${id}, ${session.uid}, ${name}, ${description ?? null})
-      on conflict (id) do update set name = excluded.name, description = excluded.description`;
-
-    await sql`delete from plan_exercises where plan_id = ${id}`;
-    for (let i = 0; i < (exercises ?? []).length; i++) {
-      const ex = exercises[i];
-      const name_val = typeof ex === 'string' ? ex : ex.name;
-      const rest = typeof ex === 'string' ? 90 : (ex.restSeconds ?? 90);
+    // Use a transaction to ensure plan + exercises are saved atomically
+    await sql`BEGIN`;
+    try {
       await sql`
-        insert into plan_exercises (plan_id, exercise_name, rest_seconds, sort_order)
-        values (${id}, ${name_val}, ${rest}, ${i})`;
+        insert into plans (id, user_id, name, description)
+        values (${id}, ${session.uid}, ${name}, ${description ?? null})
+        on conflict (id) do update set name = excluded.name, description = excluded.description`;
+
+      await sql`delete from plan_exercises where plan_id = ${id}`;
+      const exArr = (exercises ?? []).filter(Boolean);
+      for (let i = 0; i < exArr.length; i++) {
+        const ex = exArr[i];
+        const name_val = typeof ex === 'string' ? ex : (ex.name || ex.exercise_name);
+        if (!name_val) continue; // skip invalid entries
+        const rest = typeof ex === 'string' ? 90 : (ex.restSeconds || ex.rest_seconds || 90);
+        await sql`
+          insert into plan_exercises (plan_id, exercise_name, rest_seconds, sort_order)
+          values (${id}, ${name_val}, ${rest}, ${i})`;
+      }
+      await sql`COMMIT`;
+    } catch (e) {
+      await sql`ROLLBACK`;
+      console.error('Plan save error:', e);
+      return res.status(500).json({ error: 'failed to save plan' });
     }
     return res.status(200).json({ ok: true });
   }
@@ -54,4 +66,9 @@ module.exports = async function handler(req, res) {
 
   res.setHeader('Allow', 'GET, POST, DELETE');
   return res.status(405).json({ error: 'method not allowed' });
+
+  } catch (e) {
+    console.error('[plans]', req.method, e);
+    return res.status(500).json({ error: 'internal server error' });
+  }
 };

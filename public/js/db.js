@@ -15,33 +15,63 @@ const DB_DEFAULTS = {
 let DB = { ...DB_DEFAULTS };
 let LOADED = null;
 
-// ─── Fetch helper (cookie auth) ──────────────────────────────────────────────────────────────────────────────
+// ─── Fetch helper (cookie auth) ──────────────────────────────────────────────
 
 async function apiFetch(path, opts = {}) {
   const res = await fetch(path, {
     credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
     ...opts,
-    keepalive: true, // always keep-alive to survive page unload
   });
   if (res.status === 401) { window.location.href = '/login.html'; return null; }
+  if (!res.ok) {
+    const msg = await res.text().catch(() => res.statusText);
+    throw new Error(`API ${opts.method || 'GET'} ${path} → ${res.status}: ${msg}`);
+  }
   return res;
+}
+
+// Fire-and-forget version for beforeunload (keepalive, no error handling)
+function apiFetchBeacon(path, opts = {}) {
+  fetch(path, {
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
+    ...opts,
+    keepalive: true,
+  }).catch(() => {});
 }
 
 // ─── Load ─────────────────────────────────────────────────────────────────────
 
 async function loadDB() {
+  const MAX_RETRIES = 2;
+
+  async function fetchSection(path, fallback) {
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const r = await apiFetch(path);
+        if (!r) return fallback; // 401 redirect
+        return await r.json();
+      } catch (e) {
+        console.warn(`[Tiger8] load ${path} attempt ${attempt + 1} failed:`, e.message);
+        if (attempt === MAX_RETRIES) return fallback;
+        await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+      }
+    }
+    return fallback;
+  }
+
   try {
     const [profile, serverExercises, workouts, plans, weekPlan, prs, weightLog, supplements] =
       await Promise.all([
-        apiFetch('/api/profile').then(r => r?.ok ? r.json() : {}).catch(e => (console.warn('load profile failed', e), {})),
-        apiFetch('/api/exercises').then(r => r?.ok ? r.json() : []).catch(e => (console.warn('load exercises failed', e), [])),
-        apiFetch('/api/workouts').then(r => r?.ok ? r.json() : []).catch(e => (console.warn('load workouts failed', e), [])),
-        apiFetch('/api/plans').then(r => r?.ok ? r.json() : []).catch(e => (console.warn('load plans failed', e), [])),
-        apiFetch('/api/week-plan').then(r => r?.ok ? r.json() : { sun:'', mon:'', tue:'', wed:'', thu:'', fri:'', sat:'' }).catch(e => (console.warn('load week-plan failed', e), { sun:'', mon:'', tue:'', wed:'', thu:'', fri:'', sat:'' })),
-        apiFetch('/api/prs').then(r => r?.ok ? r.json() : {}).catch(e => (console.warn('load prs failed', e), {})),
-        apiFetch('/api/weight').then(r => r?.ok ? r.json() : []).catch(e => (console.warn('load weight failed', e), [])),
-        apiFetch('/api/supplements').then(r => r?.ok ? r.json() : []).catch(e => (console.warn('load supplements failed', e), [])),
+        fetchSection('/api/profile', {}),
+        fetchSection('/api/exercises', []),
+        fetchSection('/api/workouts', []),
+        fetchSection('/api/plans', []),
+        fetchSection('/api/week-plan', { sun:'', mon:'', tue:'', wed:'', thu:'', fri:'', sat:'' }),
+        fetchSection('/api/prs', {}),
+        fetchSection('/api/weight', []),
+        fetchSection('/api/supplements', []),
       ]);
 
     DB.user = {
@@ -59,6 +89,7 @@ async function loadDB() {
 
     DB.workouts = workouts.map(w => ({
       id: Number(w.id), name: w.name, muscles: w.muscles, date: w.date, duration: w.duration,
+      startTime: w.start_time || null, endTime: w.end_time || null,
       exercises: (w.exercises || []).filter(Boolean).map(ex => ({
         name: ex.exercise_name, restSeconds: ex.rest_seconds,
         sets: (ex.sets || []).filter(Boolean).map(s => ({ weight: s.weight, reps: s.reps, done: s.done })),
@@ -81,7 +112,7 @@ async function loadDB() {
     console.log('[Tiger8] loadDB complete:', { plans: DB.plans.length, workouts: DB.workouts.length, user: DB.user.email });
 
   } catch (e) {
-    console.warn('loadDB failed', e);
+    console.error('[Tiger8] loadDB failed:', e);
     DB = { ...DB_DEFAULTS };
   }
 
@@ -107,6 +138,8 @@ const _dirty = new Set();
 let _saveTimer = null;
 let _saving = false;
 let _flushPromise = null;
+let _retryCount = 0;
+const MAX_SYNC_RETRIES = 3;
 
 function saveDB() {
   clearTimeout(_saveTimer);
@@ -115,7 +148,6 @@ function saveDB() {
 
 async function flushSave() {
   if (_saving) {
-    // Wait for existing save to finish, then try again
     if (_flushPromise) await _flushPromise;
     if (!_dirty.size) return;
   }
@@ -126,43 +158,103 @@ async function flushSave() {
   _flushPromise = (async () => {
     try {
       const results = await Promise.allSettled(keys.map(key => syncSection(key)));
-      results.forEach((r, i) => { if (r.status === 'rejected') console.error('sync failed:', keys[i], r.reason); });
-      LOADED = JSON.parse(JSON.stringify(DB));
+      let anyFailed = false;
+      results.forEach((r, i) => {
+        if (r.status === 'rejected') {
+          console.error('[Tiger8] sync failed:', keys[i], r.reason?.message || r.reason);
+          // Re-add failed keys so they'll be retried
+          _dirty.add(keys[i]);
+          anyFailed = true;
+        }
+      });
+      // Only update LOADED for sections that succeeded
+      if (!anyFailed) {
+        LOADED = JSON.parse(JSON.stringify(DB));
+        _retryCount = 0;
+      } else {
+        // Update LOADED only for the sections that succeeded
+        const succeeded = keys.filter((_, i) => results[i].status === 'fulfilled');
+        if (succeeded.length > 0) {
+          for (const key of succeeded) {
+            LOADED[key] = JSON.parse(JSON.stringify(DB[key]));
+          }
+        }
+        _retryCount++;
+        if (_retryCount <= MAX_SYNC_RETRIES) {
+          // Schedule retry with backoff
+          setTimeout(flushSave, 1000 * _retryCount);
+        } else {
+          _retryCount = 0;
+          showToast('שגיאה בשמירה – נסה שוב מאוחר יותר', 'error');
+        }
+      }
     } finally {
       _saving = false;
       _flushPromise = null;
-      if (_dirty.size) flushSave();
+      if (_dirty.size && _retryCount === 0) flushSave();
     }
   })();
   return _flushPromise;
 }
 
-// Flush on tab hide (mobile background) and on page unload (refresh/navigate away)
+// Flush on tab hide (mobile background)
 window.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') { clearTimeout(_saveTimer); flushSave(); }
 });
+// On page unload — use beacon approach (fire and forget, keepalive)
 window.addEventListener('beforeunload', () => {
   clearTimeout(_saveTimer);
-  // Force flush even if _saving — the keepalive on fetch ensures completion
   if (_dirty.size) {
-    _saving = false;
-    flushSave();
+    const keys = [..._dirty];
+    _dirty.clear();
+    for (const key of keys) {
+      try { syncSectionBeacon(key); } catch {}
+    }
   }
 });
 
-// ─── Section sync ─────────────────────────────────────────────────────────────
+// ─── Section sync (throws on failure) ─────────────────────────────────────────
 
 async function syncSection(key) {
-  try {
-    if      (key === 'user')        await syncProfile();
-    else if (key === 'weekPlan')    await syncWeekPlan();
-    else if (key === 'prs')         await syncPrs();
-    else if (key === 'exercises')   await syncExercises();
-    else if (key === 'workouts')    await syncWorkouts();
-    else if (key === 'plans')       await syncPlans();
-    else if (key === 'weightLog')   await syncWeightLog();
-    else if (key === 'supplements') await syncSupplements();
-  } catch (e) { console.warn('syncSection(' + key + ') failed', e); }
+  if      (key === 'user')        await syncProfile();
+  else if (key === 'weekPlan')    await syncWeekPlan();
+  else if (key === 'prs')         await syncPrs();
+  else if (key === 'exercises')   await syncExercises();
+  else if (key === 'workouts')    await syncWorkouts();
+  else if (key === 'plans')       await syncPlans();
+  else if (key === 'weightLog')   await syncWeightLog();
+  else if (key === 'supplements') await syncSupplements();
+}
+
+// Beacon version for beforeunload — no error handling, just best-effort
+function syncSectionBeacon(key) {
+  if (key === 'plans') {
+    for (const p of DB.plans) {
+      apiFetchBeacon('/api/plans', {
+        method: 'POST',
+        body: JSON.stringify({ id: p.id, name: p.name, description: p.desc, exercises: p.exercises }),
+      });
+    }
+  } else if (key === 'workouts') {
+    const loadedIds = new Set((LOADED?.workouts || []).map(w => String(w.id)));
+    for (const w of DB.workouts) {
+      if (!loadedIds.has(String(w.id))) {
+        apiFetchBeacon('/api/workouts', {
+          method: 'POST',
+          body: JSON.stringify({ id: w.id, name: w.name, muscles: w.muscles, date: w.date, duration: w.duration, exercises: w.exercises }),
+        });
+      }
+    }
+  } else if (key === 'user') {
+    apiFetchBeacon('/api/profile', {
+      method: 'PUT',
+      body: JSON.stringify({ name: DB.user.name, age: DB.user.age, height: DB.user.height, goal: DB.user.goal }),
+    });
+  } else if (key === 'weekPlan') {
+    apiFetchBeacon('/api/week-plan', { method: 'PUT', body: JSON.stringify(DB.weekPlan) });
+  } else if (key === 'prs') {
+    apiFetchBeacon('/api/prs', { method: 'PUT', body: JSON.stringify(DB.prs) });
+  }
 }
 
 async function syncProfile() {
@@ -221,12 +313,14 @@ async function syncPlans() {
   const loadedIds = new Set((LOADED?.plans || []).map(p => String(p.id)));
   const currentIds = new Set(DB.plans.map(p => String(p.id)));
 
+  // Upsert all current plans
   for (const p of DB.plans) {
     await apiFetch('/api/plans', {
       method: 'POST',
       body: JSON.stringify({ id: p.id, name: p.name, description: p.desc, exercises: p.exercises }),
     });
   }
+  // Delete removed plans
   for (const id of loadedIds) {
     if (!currentIds.has(id)) {
       await apiFetch('/api/plans', { method: 'DELETE', body: JSON.stringify({ id: parseInt(id, 10) }) });
@@ -249,7 +343,7 @@ async function syncWeightLog() {
         method: 'POST',
         body: JSON.stringify({ weight: entry.weight, date: entry.date, note: entry.note || null }),
       });
-      if (res?.ok) { const data = await res.json(); entry.id = data.id; }
+      if (res) { const data = await res.json(); entry.id = data.id; }
     }
   }
 }

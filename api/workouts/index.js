@@ -2,6 +2,7 @@ const { requireSession, readJsonBody } = require('../_lib/auth');
 const { sql } = require('../_lib/db');
 
 module.exports = async function handler(req, res) {
+  try {
   const session = await requireSession(req, res);
   if (!session) return;
 
@@ -64,4 +65,9 @@ module.exports = async function handler(req, res) {
 
   res.setHeader('Allow', 'GET, POST, DELETE');
   return res.status(405).json({ error: 'method not allowed' });
+
+  } catch (e) {
+    console.error('[workouts]', req.method, e);
+    return res.status(500).json({ error: 'internal server error' });
+  }
 };
