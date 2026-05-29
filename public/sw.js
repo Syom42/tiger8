@@ -1,91 +1,131 @@
-// Tiger8 Service Worker — Supplement Notification Scheduler
-const CACHE_NAME = 'tiger8-supps-v1';
-const SUPP_STORE_KEY = 'tiger8_supp_schedule';
+﻿// Tiger8 Service Worker â€” Supplement Notification Scheduler
+const CACHE_NAME = 'tiger8-supps-v2';
+const SCHEDULE_CACHE_KEY = '/supp-schedule.json';
 
-// ─── Install & Activate ──────────────────────────────────────────────────────
+// â”€â”€â”€ Install & Activate â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
+self.addEventListener('activate', (e) => e.waitUntil(
+  self.clients.claim().then(() => loadScheduleFromCache())
+));
 
-// ─── Listen for schedule updates from the main app ───────────────────────────
+// â”€â”€â”€ Persist schedule in Cache API so it survives SW restarts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+async function saveScheduleToCache(supps) {
+  try {
+    const cache = await caches.open(CACHE_NAME);
+    const response = new Response(JSON.stringify(supps), {
+      headers: { 'Content-Type': 'application/json' }
+    });
+    await cache.put(SCHEDULE_CACHE_KEY, response);
+  } catch (e) { console.warn('[SW] cache save failed:', e); }
+}
+
+async function loadScheduleFromCache() {
+  try {
+    const cache = await caches.open(CACHE_NAME);
+    const response = await cache.match(SCHEDULE_CACHE_KEY);
+    if (response) {
+      self.suppSchedule = await response.json();
+      scheduleNotifications();
+    }
+  } catch (e) { console.warn('[SW] cache load failed:', e); }
+}
+
+// â”€â”€â”€ Listen for schedule updates from the main app â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'UPDATE_SUPP_SCHEDULE') {
-    // Store supplement schedule: [{id, name, dose, time, enabled, takenToday}]
     self.suppSchedule = event.data.supplements || [];
-    // Reschedule alarms
+    saveScheduleToCache(self.suppSchedule);
     scheduleNotifications();
+  }
+  if (event.data && event.data.type === 'TEST_NOTIFICATION') {
+    self.registration.showNotification('ðŸ’Š Tiger8 â€” ×‘×“×™×§×ª ×”×ª×¨××•×ª', {
+      body: '×”×”×ª×¨××•×ª ×¢×•×‘×“×•×ª! ðŸŽ‰',
+      icon: '/tiger8-icon.png',
+      vibrate: [200, 100, 200],
+      tag: 'supp-test',
+      requireInteraction: false,
+    });
   }
 });
 
-// ─── Periodic check via setInterval inside SW (runs while SW is alive) ───────
-let checkInterval = null;
+// â”€â”€â”€ Notification scheduling via setTimeout (precise timing) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+let _scheduledTimers = [];
 
 function scheduleNotifications() {
-  if (checkInterval) clearInterval(checkInterval);
-  // Check every 30 seconds
-  checkInterval = setInterval(checkAndNotify, 30000);
-  // Also check immediately
-  checkAndNotify();
-}
+  // Clear any previous timers
+  _scheduledTimers.forEach(t => clearTimeout(t));
+  _scheduledTimers = [];
 
-function checkAndNotify() {
   const supps = self.suppSchedule || [];
   if (!supps.length) return;
 
   const now = new Date();
-  const nowMins = now.getHours() * 60 + now.getMinutes();
   const todayKey = now.toISOString().slice(0, 10);
 
   supps.forEach(s => {
     if (!s.enabled || s.takenToday) return;
 
     const [h, m] = (s.time || '08:00').split(':').map(Number);
-    const dueMins = h * 60 + m;
+    const fireAt = new Date();
+    fireAt.setHours(h, m, 0, 0);
 
-    // Fire notification if we're within 1 minute of the due time
-    if (nowMins === dueMins) {
-      // Prevent duplicate: use a tag so browser deduplicates
-      self.registration.showNotification('💊 Tiger8 — זמן לקחת תוסף', {
-        body: `${s.name}${s.dose ? ' · ' + s.dose : ''}`,
-        icon: '/icon-192.png',
-        badge: '/icon-192.png',
-        tag: `supp-${s.id}-${todayKey}`,
-        vibrate: [200, 100, 200],
-        requireInteraction: true,
-        actions: [
-          { action: 'taken', title: '✓ לקחתי' },
-          { action: 'snooze', title: '⏰ הזכר בעוד 10 דק׳' }
-        ],
-        data: { suppId: s.id, todayKey }
-      });
-    }
+    // Schedule the main notification
+    const msUntil = fireAt.getTime() - now.getTime();
+    if (msUntil > -60000 && msUntil < 24 * 60 * 60 * 1000) {
+      const delay = Math.max(0, msUntil);
+      const t1 = setTimeout(() => fireNotification(s, todayKey, false), delay);
+      _scheduledTimers.push(t1);
 
-    // Also fire if we're 5 minutes past due (reminder)
-    if (nowMins === dueMins + 5) {
-      self.registration.showNotification('💊 תזכורת נוספת', {
-        body: `עדיין לא לקחת ${s.name}`,
-        icon: '/icon-192.png',
-        tag: `supp-reminder-${s.id}-${todayKey}`,
-        vibrate: [100, 50, 100],
-        data: { suppId: s.id, todayKey }
-      });
+      // Schedule a 5-min reminder
+      const t2 = setTimeout(() => fireNotification(s, todayKey, true), delay + 5 * 60 * 1000);
+      _scheduledTimers.push(t2);
     }
   });
 }
 
-// ─── Notification click handler ──────────────────────────────────────────────
+function fireNotification(s, todayKey, isReminder) {
+  const title = isReminder ? 'ðŸ’Š ×ª×–×›×•×¨×ª × ×•×¡×¤×ª' : 'ðŸ’Š Tiger8 â€” ×–×ž×Ÿ ×œ×§×—×ª ×ª×•×¡×£';
+  const body = isReminder
+    ? `×¢×“×™×™×Ÿ ×œ× ×œ×§×—×ª ${s.name}`
+    : `${s.name}${s.dose ? ' Â· ' + s.dose : ''}`;
+  const tag = isReminder
+    ? `supp-reminder-${s.id}-${todayKey}`
+    : `supp-${s.id}-${todayKey}`;
+
+  self.registration.showNotification(title, {
+    body,
+    icon: '/tiger8-icon.png',
+    badge: '/tiger8-icon.png',
+    tag,
+    vibrate: [200, 100, 200],
+    requireInteraction: !isReminder,
+    actions: [
+      { action: 'taken', title: 'âœ“ ×œ×§×—×ª×™' },
+      { action: 'snooze', title: 'â° +10 ×“×§×³' }
+    ],
+    data: { suppId: s.id, todayKey }
+  });
+
+  // Also notify open clients to show in-app alert
+  self.clients.matchAll({ type: 'window' }).then(clients => {
+    clients.forEach(c => c.postMessage({
+      type: 'SUPP_DUE', suppId: s.id, name: s.name
+    }));
+  });
+}
+
+// â”€â”€â”€ Notification click handler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
   const { suppId, todayKey } = event.notification.data || {};
 
   if (event.action === 'taken' && suppId) {
-    // Tell the app to mark as taken
     event.waitUntil(
       self.clients.matchAll({ type: 'window' }).then(clients => {
         clients.forEach(client => {
           client.postMessage({ type: 'SUPP_TAKEN', suppId, todayKey });
         });
-        // Focus existing window or open new
         if (clients.length > 0) {
           clients[0].focus();
         } else {
@@ -94,22 +134,23 @@ self.addEventListener('notificationclick', (event) => {
       })
     );
   } else if (event.action === 'snooze' && suppId) {
-    // Snooze: show notification again in 10 minutes
     const supp = (self.suppSchedule || []).find(s => s.id === suppId);
-    if (supp) {
-      setTimeout(() => {
-        self.registration.showNotification('💊 תזכורת — ' + supp.name, {
-          body: supp.dose || 'זמן לקחת!',
-          icon: '/icon-192.png',
-          tag: `supp-snooze-${suppId}-${todayKey}`,
-          vibrate: [200, 100, 200],
-          requireInteraction: true,
-          data: { suppId, todayKey }
-        });
-      }, 10 * 60 * 1000);
-    }
+    event.waitUntil(
+      new Promise(resolve => {
+        setTimeout(() => {
+          self.registration.showNotification('ðŸ’Š ×ª×–×›×•×¨×ª â€” ' + (supp ? supp.name : ''), {
+            body: supp?.dose || '×–×ž×Ÿ ×œ×§×—×ª!',
+            icon: '/tiger8-icon.png',
+            tag: `supp-snooze-${suppId}-${todayKey}`,
+            vibrate: [200, 100, 200],
+            requireInteraction: true,
+            data: { suppId, todayKey }
+          });
+          resolve();
+        }, 10 * 60 * 1000);
+      })
+    );
   } else {
-    // Default: open app
     event.waitUntil(
       self.clients.matchAll({ type: 'window' }).then(clients => {
         if (clients.length > 0) {
@@ -122,9 +163,24 @@ self.addEventListener('notificationclick', (event) => {
   }
 });
 
-// ─── Periodic Background Sync (if supported) ─────────────────────────────────
+// â”€â”€â”€ Periodic Background Sync (if supported) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 self.addEventListener('periodicsync', (event) => {
   if (event.tag === 'supp-check') {
-    event.waitUntil(checkAndNotify());
+    event.waitUntil(loadScheduleFromCache().then(() => {
+      const supps = self.suppSchedule || [];
+      const now = new Date();
+      const nowMins = now.getHours() * 60 + now.getMinutes();
+      const todayKey = now.toISOString().slice(0, 10);
+      supps.forEach(s => {
+        if (!s.enabled || s.takenToday) return;
+        const [h, m] = (s.time || '08:00').split(':').map(Number);
+        if (nowMins >= h * 60 + m && nowMins <= h * 60 + m + 10) {
+          fireNotification(s, todayKey, false);
+        }
+      });
+    }));
   }
 });
+
+// â”€â”€â”€ On SW start, reload schedule from cache â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+loadScheduleFromCache();

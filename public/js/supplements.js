@@ -1,13 +1,42 @@
-// ============ SUPPLEMENTS ============
+﻿// ============ SUPPLEMENTS ============
 
 // DB.supplements schema: [{ id, name, dose, time, enabled, takenDates:[] }]
 
 function renderSupplements() {
   renderSupplementReminders();
   renderSupplementList();
+  renderNotifStatus();
 }
 
-// ── Home screen reminder cards ───────────────────────────────────────────────
+function renderNotifStatus() {
+  const el = document.getElementById('notifStatus');
+  if (!el) return;
+
+  if (!('Notification' in window)) {
+    el.style.display = 'block';
+    el.style.background = 'var(--accent2-glow)';
+    el.style.color = 'var(--accent2)';
+    el.innerHTML = 'âš ï¸ ×”×“×¤×“×¤×Ÿ ×œ× ×ª×•×ž×š ×‘×”×ª×¨××•×ª';
+    return;
+  }
+
+  const perm = Notification.permission;
+  if (perm === 'denied') {
+    el.style.display = 'block';
+    el.style.background = 'var(--accent2-glow)';
+    el.style.color = 'var(--accent2)';
+    el.innerHTML = 'ðŸš« ×”×ª×¨××•×ª ×—×¡×•×ž×•×ª â€” ×™×© ×œ××¤×©×¨ ×‘×”×’×“×¨×•×ª ×”×“×¤×“×¤×Ÿ';
+  } else if (perm === 'default') {
+    el.style.display = 'block';
+    el.style.background = 'rgba(108,92,231,0.15)';
+    el.style.color = 'var(--accent)';
+    el.innerHTML = 'ðŸ”” <a href="#" onclick="requestNotificationPermission();return false" style="color:var(--accent);text-decoration:underline">×”×¤×¢×œ ×”×ª×¨××•×ª</a> ×›×“×™ ×œ×§×‘×œ ×ª×–×›×•×¨×•×ª ×œ×ª×•×¡×¤×™×';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+// â”€â”€ Home screen reminder cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function renderSupplementReminders() {
   const el = document.getElementById('supplementReminders');
   if (!el) return;
@@ -30,8 +59,8 @@ function renderSupplementReminders() {
       el.style.display = 'block';
       el.innerHTML = `
         <div class="card" style="border:1px dashed var(--border);text-align:center;padding:16px">
-          <div style="font-size:13px;color:var(--text3)">💊 הוסף תוספי תזונה למעקב יומי</div>
-          <button class="btn btn-ghost btn-sm" onclick="showScreen('user');switchProfileTab('supps')" style="margin-top:8px">הגדר תוספים</button>
+          <div style="font-size:13px;color:var(--text3)">ðŸ’Š ×”×•×¡×£ ×ª×•×¡×¤×™ ×ª×–×•× ×” ×œ×ž×¢×§×‘ ×™×•×ž×™</div>
+          <button class="btn btn-ghost btn-sm" onclick="showScreen('user');switchProfileTab('supps')" style="margin-top:8px">×”×’×“×¨ ×ª×•×¡×¤×™×</button>
         </div>`;
     } else {
       el.innerHTML = ''; el.style.display = 'none';
@@ -42,14 +71,14 @@ function renderSupplementReminders() {
 
   el.innerHTML = `
     <div class="card">
-      <div class="card-title">💊 תוספי היום</div>
+      <div class="card-title">ðŸ’Š ×ª×•×¡×¤×™ ×”×™×•×</div>
       ${due.map(s => {
         const taken = (s.takenDates || []).includes(todayKey);
         return `
           <div class="supp-reminder-row ${taken ? 'taken' : ''}">
             <div class="supp-reminder-info">
               <div class="supp-reminder-name ${taken ? 'done' : ''}">${sanitize(s.name)}</div>
-              <div class="supp-reminder-meta">${sanitize(s.dose || '')} · ${sanitize(s.time || '')}</div>
+              <div class="supp-reminder-meta">${sanitize(s.dose || '')} Â· ${sanitize(s.time || '')}</div>
             </div>
             <button class="supp-check-btn ${taken ? 'checked' : ''}" onclick="toggleSupplementTaken('${sanitize(s.id)}')">
               <svg class="supp-check-svg" viewBox="0 0 36 36">
@@ -84,13 +113,13 @@ function toggleSupplementTaken(id) {
   syncSuppScheduleToSW();
 }
 
-// ── Supplement management screen ─────────────────────────────────────────────
+// â”€â”€ Supplement management screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function renderSupplementList() {
   const el = document.getElementById('supplementList');
   if (!el) return;
 
   if (!DB.supplements?.length) {
-    el.innerHTML = `<div style="text-align:center;padding:30px;color:var(--text3);font-size:13px">אין תוספים עדיין.<br>הקש + כדי להוסיף.</div>`;
+    el.innerHTML = `<div style="text-align:center;padding:30px;color:var(--text3);font-size:13px">××™×Ÿ ×ª×•×¡×¤×™× ×¢×“×™×™×Ÿ.<br>×”×§×© + ×›×“×™ ×œ×”×•×¡×™×£.</div>`;
     return;
   }
 
@@ -98,7 +127,7 @@ function renderSupplementList() {
     <div style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--bg2);border-radius:var(--radius);margin-bottom:8px;border:1px solid var(--border)">
       <div style="flex:1;min-width:0">
         <div style="font-weight:700;font-size:15px">${sanitize(s.name)}</div>
-        <div style="font-size:12px;color:var(--text3);margin-top:2px">${s.dose ? sanitize(s.dose) + ' · ' : ''}${sanitize(s.time) || 'לא נקבע זמן'}</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px">${s.dose ? sanitize(s.dose) + ' Â· ' : ''}${sanitize(s.time) || '×œ× × ×§×‘×¢ ×–×ž×Ÿ'}</div>
       </div>
       <div onclick="toggleSupplementEnabled('${s.id}')"
         style="width:52px;height:30px;border-radius:15px;background:${s.enabled ? 'var(--accent)' : 'var(--bg3)'};
@@ -106,7 +135,7 @@ function renderSupplementList() {
         <div style="position:absolute;top:3px;${s.enabled ? 'right:3px' : 'left:3px'};width:24px;height:24px;border-radius:50%;background:#fff;transition:all 0.2s"></div>
       </div>
       <button onclick="deleteSupplementPrompt('${s.id}')"
-        style="background:var(--accent2-glow);border:none;color:var(--accent2);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:16px;min-width:44px;min-height:44px;transition:all 0.15s">🗑</button>
+        style="background:var(--accent2-glow);border:none;color:var(--accent2);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:16px;min-width:44px;min-height:44px;transition:all 0.15s">ðŸ—‘</button>
     </div>`).join('');
 }
 
@@ -122,12 +151,12 @@ function deleteSupplementPrompt(id) {
   const s = DB.supplements.find(x => x.id === id);
   if (!s) return;
   showDialog({
-    icon: '🗑️',
-    title: 'מחיקת תוסף?',
+    icon: 'ðŸ—‘ï¸',
+    title: '×ž×—×™×§×ª ×ª×•×¡×£?',
     msg: s.name,
     buttons: [
-      { label: 'ביטול' },
-      { label: 'מחק', primary: true, action: () => {
+      { label: '×‘×™×˜×•×œ' },
+      { label: '×ž×—×§', primary: true, action: () => {
         db.update(d => { d.supplements = d.supplements.filter(x => x.id !== id); });
         renderSupplements();
       }}
@@ -135,7 +164,7 @@ function deleteSupplementPrompt(id) {
   });
 }
 
-// ── Add / Edit modal ──────────────────────────────────────────────────────────
+// â”€â”€ Add / Edit modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function openAddSupplement() {
   document.getElementById('suppName').value = '';
   document.getElementById('suppDose').value = '';
@@ -147,7 +176,7 @@ function saveSupplement() {
   const name = document.getElementById('suppName').value.trim();
   const dose = document.getElementById('suppDose').value.trim();
   const time = document.getElementById('suppTime').value || '08:00';
-  if (!name) { showToast('הזן שם לתוסף', 'error'); return; }
+  if (!name) { showToast('×”×–×Ÿ ×©× ×œ×ª×•×¡×£', 'error'); return; }
 
   db.update(d => {
     d.supplements.push({ id: 'supp_' + Date.now(), name, dose, time, enabled: true, takenDates: [] });
@@ -156,42 +185,71 @@ function saveSupplement() {
   closeModal('modal-supplement');
   renderSupplements();
   requestNotificationPermission();
-  showToast('✅ ' + name + ' נוסף');
+  showToast('âœ… ' + name + ' × ×•×¡×£');
 }
 
-// ── Browser Notifications ─────────────────────────────────────────────────────
+// â”€â”€ Browser Notifications â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function requestNotificationPermission() {
-  if ('Notification' in window && Notification.permission === 'default') {
+  if (!('Notification' in window)) {
+    showToast('×”×“×¤×“×¤×Ÿ ×œ× ×ª×•×ž×š ×‘×”×ª×¨××•×ª', 'error');
+    return;
+  }
+  if (Notification.permission === 'granted') {
+    registerSupplementSW();
+    return;
+  }
+  if (Notification.permission === 'default') {
     Notification.requestPermission().then(perm => {
       if (perm === 'granted') {
         registerSupplementSW();
-        showToast('🔔 התראות הופעלו!');
+        showToast('ðŸ”” ×”×ª×¨××•×ª ×”×•×¤×¢×œ×•!');
+      } else {
+        showToast('×”×ª×¨××•×ª × ×—×¡×ž×• â€” ××¤×©×¨ ×‘×”×’×“×¨×•×ª ×”×“×¤×“×¤×Ÿ', 'error');
       }
     });
   }
+  if (Notification.permission === 'denied') {
+    showToast('×”×ª×¨××•×ª ×—×¡×•×ž×•×ª â€” ×©× ×” ×‘×”×’×“×¨×•×ª ×”×“×¤×“×¤×Ÿ', 'error');
+  }
 }
 
-// ── Service Worker Registration & Schedule Sync ──────────────────────────────
+// â”€â”€ Service Worker Registration & Schedule Sync â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let _swRegistration = null;
 
 async function registerSupplementSW() {
-  if (!('serviceWorker' in navigator)) return;
+  if (!('serviceWorker' in navigator)) {
+    console.warn('[Tiger8] No serviceWorker support');
+    return;
+  }
   try {
     _swRegistration = await navigator.serviceWorker.register('/sw.js');
-    console.log('[Tiger8] SW registered for notifications');
-    // Listen for messages from SW (e.g. SUPP_TAKEN action from notification)
+    console.log('[Tiger8] SW registered');
+
+    // Wait for the SW to be active (fixes race condition)
+    const reg = await navigator.serviceWorker.ready;
+    console.log('[Tiger8] SW is active/ready');
+
+    // Listen for messages from SW
     navigator.serviceWorker.addEventListener('message', (event) => {
       if (event.data?.type === 'SUPP_TAKEN') {
         markSupplementTakenFromSW(event.data.suppId, event.data.todayKey);
       }
+      if (event.data?.type === 'SUPP_DUE') {
+        // In-app notification when the app is open
+        showToast(`ðŸ’Š ×–×ž×Ÿ ×œ×§×—×ª ${event.data.name}!`);
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+      }
     });
-    // Try periodic background sync
-    if ('periodicSync' in _swRegistration) {
+
+    // Register periodic background sync if available
+    if ('periodicSync' in reg) {
       try {
-        await _swRegistration.periodicSync.register('supp-check', { minInterval: 60 * 1000 });
-      } catch { /* not all browsers support this */ }
+        await reg.periodicSync.register('supp-check', { minInterval: 60 * 1000 });
+        console.log('[Tiger8] Periodic sync registered');
+      } catch (e) { console.log('[Tiger8] Periodic sync not available:', e.message); }
     }
-    // Sync schedule immediately
+
+    // Sync schedule to SW
     syncSuppScheduleToSW();
   } catch (e) {
     console.warn('[Tiger8] SW registration failed:', e);
@@ -199,20 +257,58 @@ async function registerSupplementSW() {
 }
 
 function syncSuppScheduleToSW() {
-  if (!navigator.serviceWorker?.controller) return;
-  const todayKey = new Date().toISOString().slice(0, 10);
-  const supplements = (DB.supplements || []).map(s => ({
-    id: s.id,
-    name: s.name,
-    dose: s.dose,
-    time: s.time,
-    enabled: s.enabled,
-    takenToday: (s.takenDates || []).includes(todayKey),
-  }));
-  navigator.serviceWorker.controller.postMessage({
-    type: 'UPDATE_SUPP_SCHEDULE',
-    supplements,
-  });
+  // Use the ready promise to get the active SW â€” avoids the controller being null
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.ready.then(reg => {
+    const sw = reg.active;
+    if (!sw) { console.warn('[Tiger8] SW not active yet'); return; }
+
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const supplements = (DB.supplements || []).map(s => ({
+      id: s.id,
+      name: s.name,
+      dose: s.dose,
+      time: s.time,
+      enabled: s.enabled,
+      takenToday: (s.takenDates || []).includes(todayKey),
+    }));
+    sw.postMessage({ type: 'UPDATE_SUPP_SCHEDULE', supplements });
+    console.log('[Tiger8] Schedule synced to SW:', supplements.length, 'supplements');
+  }).catch(e => console.warn('[Tiger8] syncSuppScheduleToSW failed:', e));
+}
+
+function testNotification() {
+  if (!('Notification' in window)) {
+    showToast('×”×“×¤×“×¤×Ÿ ×œ× ×ª×•×ž×š ×‘×”×ª×¨××•×ª', 'error');
+    return;
+  }
+  if (Notification.permission !== 'granted') {
+    requestNotificationPermission();
+    return;
+  }
+  // Try via SW first
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then(reg => {
+      if (reg.active) {
+        reg.active.postMessage({ type: 'TEST_NOTIFICATION' });
+        showToast('ðŸ”” ×”×ª×¨××ª ×‘×“×™×§×” × ×©×œ×—×”!');
+      } else {
+        // Fallback: use Notification API directly
+        new Notification('ðŸ’Š Tiger8 â€” ×‘×“×™×§×ª ×”×ª×¨××•×ª', {
+          body: '×”×”×ª×¨××•×ª ×¢×•×‘×“×•×ª! ðŸŽ‰',
+          icon: '/tiger8-icon.png',
+          tag: 'supp-test',
+        });
+        showToast('ðŸ”” ×”×ª×¨××ª ×‘×“×™×§×” × ×©×œ×—×”!');
+      }
+    });
+  } else {
+    new Notification('ðŸ’Š Tiger8 â€” ×‘×“×™×§×ª ×”×ª×¨××•×ª', {
+      body: '×”×”×ª×¨××•×ª ×¢×•×‘×“×•×ª! ðŸŽ‰',
+      tag: 'supp-test',
+    });
+    showToast('ðŸ”” ×”×ª×¨××ª ×‘×“×™×§×” × ×©×œ×—×”!');
+  }
 }
 
 function markSupplementTakenFromSW(suppId, todayKey) {
@@ -234,12 +330,15 @@ function scheduleSupplementNotifications() {
   if ('Notification' in window && Notification.permission === 'granted') {
     registerSupplementSW();
   }
-  // Also keep the fallback setTimeout approach for when SW isn't ready
+  // Also set up fallback setTimeout approach
   _scheduleSupplementTimeouts();
 }
 
+let _suppTimeouts = [];
 function _scheduleSupplementTimeouts() {
-  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  // Clear previous
+  _suppTimeouts.forEach(t => clearTimeout(t));
+  _suppTimeouts = [];
 
   const todayKey = new Date().toISOString().slice(0, 10);
   const now = new Date();
@@ -255,16 +354,22 @@ function _scheduleSupplementTimeouts() {
     const msUntil = fireAt - now;
 
     if (msUntil > 0 && msUntil < 24 * 60 * 60 * 1000) {
-      setTimeout(() => {
-        if (document.hidden) {
-          new Notification('💊 Tiger8 — Supplement Reminder', {
-            body: `Time to take ${s.name}${s.dose ? ' · ' + s.dose : ''}`,
-            icon: '/icon-192.png',
-            tag: 'supp-' + s.id
+      const t = setTimeout(() => {
+        // Show in-app toast
+        showToast(`ðŸ’Š ×–×ž×Ÿ ×œ×§×—×ª ${s.name}!`);
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+        renderSupplementReminders();
+
+        // Also show system notification if permission granted and page is hidden
+        if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
+          new Notification('ðŸ’Š Tiger8 â€” ×–×ž×Ÿ ×œ×§×—×ª ×ª×•×¡×£', {
+            body: `${s.name}${s.dose ? ' Â· ' + s.dose : ''}`,
+            icon: '/tiger8-icon.png',
+            tag: 'supp-fallback-' + s.id
           });
         }
-        renderSupplementReminders();
       }, msUntil);
+      _suppTimeouts.push(t);
     }
   });
 }
