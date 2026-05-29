@@ -99,7 +99,8 @@
       <button class="btn btn-ghost btn-sm" onclick="showModal('modal-routine-template')">&#x1F4CB; תבנית</button>
       <button class="btn btn-primary btn-sm" onclick="editingPlanId=null;planExList_arr=[];document.getElementById('planName').value='';document.getElementById('planDesc').value='';document.querySelector('#modal-new-plan .modal-title').textContent='תוכנית חדשה';renderPlanExList();showModal('modal-new-plan')">+ תוכנית</button>
     </div>
-    <div id="prsScreenActions" style="display:none">
+    <div id="prsScreenActions" style="display:none;gap:8px">
+      <button class="btn btn-primary btn-sm" onclick="showModal('modal-add-pr')">+ שיא חדש</button>
       <button class="btn btn-ghost btn-sm" onclick="showModal('modal-1rm')">&#x1F9EE; מחשבון 1RM</button>
     </div>
   </div>
@@ -590,6 +591,30 @@
 
 <!-- EXERCISE AUTOCOMPLETE DATALIST -->
 <datalist id="ex-datalist"></datalist>
+
+<!-- ADD PR MODAL -->
+<div class="modal-overlay" id="modal-add-pr">
+  <div class="modal" style="position:relative">
+    <button class="modal-close" onclick="closeModal('modal-add-pr')">&#x2715;</button>
+    <div class="modal-title">🏆 הוסף שיא חדש</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:16px">רשום שיא אישי ידני לתרגיל</div>
+    <div class="input-group">
+      <label>שם תרגיל</label>
+      <input type="text" id="addPrExName" list="ex-datalist" placeholder="Bench Press...">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div class="input-group" style="margin:0">
+        <label>משקל (ק"ג)</label>
+        <input type="number" id="addPrWeight" placeholder="100">
+      </div>
+      <div class="input-group" style="margin:0">
+        <label>חזרות</label>
+        <input type="number" id="addPrReps" placeholder="1" value="1">
+      </div>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="saveManualPR()">💾 שמור שיא</button>
+  </div>
+</div>
 
 <!-- CUSTOM DIALOG -->
 <div id="custom-dialog-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);z-index:999;display:none;align-items:center;justify-content:center;padding:24px">

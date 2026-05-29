@@ -1,3 +1,36 @@
+// ============ MANUAL PR ENTRY ============
+function saveManualPR() {
+  const name = document.getElementById('addPrExName').value.trim();
+  const weight = parseFloat(document.getElementById('addPrWeight').value);
+  const reps = parseInt(document.getElementById('addPrReps').value) || 1;
+
+  if (!name) { showToast('הזן שם תרגיל', 'error'); return; }
+  if (!weight || weight <= 0) { showToast('הזן משקל תקין', 'error'); return; }
+  if (reps < 1) { showToast('הזן מספר חזרות תקין', 'error'); return; }
+
+  const existing = DB.prs[name];
+  // Only save if it's a new record or beats the existing one
+  const newE1RM = weight * (1 + reps / 30);
+  if (existing) {
+    const oldE1RM = existing.weight * (1 + existing.reps / 30);
+    if (newE1RM <= oldE1RM) {
+      showToast(`לא שיא חדש — הקיים ${existing.weight}kg×${existing.reps} חזק יותר`, 'error');
+      return;
+    }
+  }
+
+  db.update(d => {
+    d.prs[name] = { weight, reps, date: new Date().toISOString() };
+  });
+
+  closeModal('modal-add-pr');
+  document.getElementById('addPrExName').value = '';
+  document.getElementById('addPrWeight').value = '';
+  document.getElementById('addPrReps').value = '1';
+  renderPRs();
+  showToast(`🏆 שיא חדש! ${name} — ${weight}kg × ${reps}`);
+}
+
 // ============ 1RM CALCULATOR ============
 // Epley formula: 1RM = weight × (1 + reps/30)
 function calc1RM() {

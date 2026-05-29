@@ -101,7 +101,7 @@ function switchWorkoutTab(tab, clickedEl) {
   const plansActions  = document.getElementById('workoutScreenActions');
   const prsActions    = document.getElementById('prsScreenActions');
   if (plansActions) plansActions.style.display = tab === 'plans' ? 'flex' : 'none';
-  if (prsActions)   prsActions.style.display   = tab === 'prs'   ? ''     : 'none';
+  if (prsActions)   prsActions.style.display   = tab === 'prs'   ? 'flex' : 'none';
   // Update tab pill highlights
   const tabBar = document.getElementById('workoutSubTabs');
   if (tabBar) {
