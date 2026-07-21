@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { personalRecords } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -30,6 +30,14 @@ app.put('/prs', zValidator('json', PrsSchema), async (c) => {
   // Same-tx batch: one transaction for all PR upserts (atomic + faster).
   await db.transaction(async (tx) => {
     for (const [exerciseName, pr] of Object.entries(body)) {
+      const [existing] = await tx.select({
+        weight: personalRecords.weight,
+        reps: personalRecords.reps,
+      }).from(personalRecords).where(and(
+        eq(personalRecords.userId, uid),
+        eq(personalRecords.exerciseName, exerciseName),
+      ));
+
       const vals = {
         userId: uid,
         exerciseName,
@@ -37,6 +45,17 @@ app.put('/prs', zValidator('json', PrsSchema), async (c) => {
         reps:   pr.reps ?? null,
         achievedAt: pr.date ? new Date(pr.date) : null,
       };
+      const incomingWeight = Number(vals.weight);
+      const existingWeight = Number(existing?.weight);
+      const incomingReps = Number(vals.reps) || 0;
+      const existingReps = Number(existing?.reps) || 0;
+
+      if (!Number.isFinite(incomingWeight) || incomingWeight <= 0) continue;
+      if (existing && (incomingWeight < existingWeight ||
+        (incomingWeight === existingWeight && incomingReps <= existingReps))) {
+        continue;
+      }
+
       await tx.insert(personalRecords).values(vals)
         .onConflictDoUpdate({
           target: [personalRecords.userId, personalRecords.exerciseName],

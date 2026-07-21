@@ -177,7 +177,7 @@ app.get('/init', requireAuth, async (c) => {
     exercises: exerciseRows,
     workouts: workoutsWithExercises,
     plans: plansWithExercises,
-    weekPlan: weekPlanRows[0] ?? { sun: '', mon: '', tue: '', wed: '', thu: '', fri: '', sat: '' },
+    weekPlan: weekPlanRows[0] ?? { sun: null, mon: null, tue: null, wed: null, thu: null, fri: null, sat: null },
     prs,
     weight: weightRows,
     supplements: suppData,

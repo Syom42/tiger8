@@ -9,12 +9,11 @@ function saveManualPR() {
   if (reps < 1) { showToast('הזן מספר חזרות תקין', 'error'); return; }
 
   const existing = DB.prs[name];
-  // Only save if it's a new record or beats the existing one
-  const newE1RM = weight * (1 + reps / 30);
+  // A record is the heaviest actual completed set; repetitions break weight ties.
   if (existing) {
-    const oldE1RM = existing.weight * (1 + existing.reps / 30);
-    if (newE1RM <= oldE1RM) {
-      showToast(`לא שיא חדש — הקיים ${existing.weight}kg×${existing.reps} חזק יותר`, 'error');
+    if (weight < Number(existing.weight) ||
+      (weight === Number(existing.weight) && reps <= Number(existing.reps))) {
+      showToast(`לא שיא משקל חדש — הקיים ${existing.weight}kg×${existing.reps}`, 'error');
       return;
     }
   }

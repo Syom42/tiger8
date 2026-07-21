@@ -44,18 +44,33 @@ const DAYS_HE = { sun:'ראשון', mon:'שני', tue:'שלישי', wed:'רבי�
 
 function renderWeekPlanEditor() {
   const el = document.getElementById('weekPlanEditor');
-  el.innerHTML = Object.entries(DAYS_HE).map(([key,name])=>`
-    <div class="input-group">
-      <label>${name}</label>
-      <input type="text" id="wp_${key}" placeholder="לדוגמה: פוש, מנוחה, חזה + כתפיים..." value="${DB.weekPlan[key]||''}">
-    </div>`).join('');
+  el.innerHTML = '';
+
+  Object.entries(DAYS_HE).forEach(([key, name]) => {
+    const group = document.createElement('div');
+    group.className = 'input-group';
+
+    const label = document.createElement('label');
+    label.htmlFor = `wp_${key}`;
+    label.textContent = name;
+
+    const select = document.createElement('select');
+    select.id = `wp_${key}`;
+    select.append(new Option('מנוחה / ללא תוכנית', ''));
+    DB.plans.forEach(plan => select.append(new Option(plan.name, String(plan.id))));
+    select.value = DB.weekPlan[key] ? String(DB.weekPlan[key]) : '';
+
+    group.append(label, select);
+    el.appendChild(group);
+  });
 }
 
 function saveWeekPlan() {
   db.update(d => {
     Object.keys(DAYS_HE).forEach(k => {
       const inp = document.getElementById('wp_' + k);
-      if (inp) d.weekPlan[k] = inp.value.trim();
+      const planId = Number(inp?.value);
+      d.weekPlan[k] = Number.isInteger(planId) && planId > 0 ? planId : null;
     });
   }, { immediate: true });
   closeModal('modal-week-plan');

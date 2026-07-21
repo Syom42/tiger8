@@ -83,13 +83,13 @@ create table if not exists plan_exercises (
 -- Weekly schedule (one row per user, upsert on save).
 create table if not exists week_plan (
   user_id bigint primary key references users(id) on delete cascade,
-  sun     text not null default '',
-  mon     text not null default '',
-  tue     text not null default '',
-  wed     text not null default '',
-  thu     text not null default '',
-  fri     text not null default '',
-  sat     text not null default ''
+  sun     bigint references plans(id) on delete set null,
+  mon     bigint references plans(id) on delete set null,
+  tue     bigint references plans(id) on delete set null,
+  wed     bigint references plans(id) on delete set null,
+  thu     bigint references plans(id) on delete set null,
+  fri     bigint references plans(id) on delete set null,
+  sat     bigint references plans(id) on delete set null
 );
 
 -- Personal records — one row per (user, exercise name).

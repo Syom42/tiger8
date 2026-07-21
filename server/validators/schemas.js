@@ -20,14 +20,15 @@ export const ProfileSchema = z.object({
   goal:   optStr,
 });
 
+const PlanIdSchema = z.number().int().positive().nullable().optional();
 export const WeekPlanSchema = z.object({
-  sun: z.string().optional(),
-  mon: z.string().optional(),
-  tue: z.string().optional(),
-  wed: z.string().optional(),
-  thu: z.string().optional(),
-  fri: z.string().optional(),
-  sat: z.string().optional(),
+  sun: PlanIdSchema,
+  mon: PlanIdSchema,
+  tue: PlanIdSchema,
+  wed: PlanIdSchema,
+  thu: PlanIdSchema,
+  fri: PlanIdSchema,
+  sat: PlanIdSchema,
 });
 
 // PRs are a map: { "Bench Press": { weight, reps, date } }

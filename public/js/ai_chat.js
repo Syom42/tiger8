@@ -369,9 +369,10 @@ function acceptSuggestion(msgId) {
   // Apply the change to weekPlan
   if (s.action === 'replace' && s.day && s.new) {
     db.update(d => {
-      // Update the week plan label for that day
-      if (d.weekPlan[s.day] !== undefined) {
-        d.weekPlan[s.day] = s.new;
+      // The weekly plan stores stable IDs, while coach suggestions use names.
+      const replacementPlan = d.plans.find(plan => plan.name === s.new);
+      if (replacementPlan && d.weekPlan[s.day] !== undefined) {
+        d.weekPlan[s.day] = replacementPlan.id;
       }
       // Also swap the exercise in any plan that contains it
       d.plans.forEach(plan => {

@@ -49,9 +49,9 @@ function renderWeekCalendar() {
     const d = new Date(today);
     d.setDate(today.getDate() - today.getDay() + i);
     const key = dayKeys[i];
-    const planName = DB.weekPlan[key] || '';
-    const isRest   = planName.toLowerCase() === 'rest' || planName === 'מנוחה';
-    const matchingPlan = DB.plans.find(p => p.name === planName);
+    const planId = DB.weekPlan[key];
+    const matchingPlan = DB.plans.find(p => p.id === Number(planId));
+    const planName = matchingPlan?.name || '';
 
     // Workouts done on this day
     const dStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
@@ -64,11 +64,11 @@ function renderWeekCalendar() {
     const isToday    = d.getTime() === today.getTime();
 
     const el = document.createElement('div');
-    const stateClass = hasWorkout ? 'has-workout' : planName && !isRest ? 'has-plan' : 'empty';
+    const stateClass = hasWorkout ? 'has-workout' : matchingPlan ? 'has-plan' : 'empty';
     el.className = 'day-cell ' + stateClass + (isToday ? ' today' : '');
     el.style.cssText = `position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px;min-height:56px;cursor:pointer;transition:transform 0.15s;width:100%;`;
 
-    el.onclick = () => showDayFullDetails(d, dayWorkouts, planName, matchingPlan, isRest);
+    el.onclick = () => showDayFullDetails(d, dayWorkouts, matchingPlan);
 
     // Day label
     const lbl = document.createElement('div');
@@ -93,12 +93,7 @@ function renderWeekCalendar() {
         badge.style.cssText = 'font-size:11px;font-weight:700;color:var(--accent3);';
         el.appendChild(badge);
       }
-    } else if (isRest) {
-      const tag = document.createElement('div');
-      tag.textContent = '🛌';
-      tag.style.fontSize = '13px';
-      el.appendChild(tag);
-    } else if (planName) {
+    } else if (matchingPlan) {
       // Has a plan — show plan name only (compact)
       const planTag = document.createElement('div');
       const short = planName.length > 4 ? planName.substring(0,4) + '…' : planName;
@@ -128,7 +123,7 @@ function showDayPlanInfo(plan, date) {
   });
 }
 
-function showDayFullDetails(dateObj, workouts, planName, plan, isRest) {
+function showDayFullDetails(dateObj, workouts, plan) {
   const dateStr = dateObj.toLocaleDateString('he-IL', { weekday: 'long', month: 'long', day: 'numeric' });
 
   // Remove any existing day-detail panel
@@ -161,30 +156,20 @@ function showDayFullDetails(dateObj, workouts, planName, plan, isRest) {
     });
   }
 
-  if (planName && !isRest) {
-    const isCompleted = workouts && workouts.some(w => w.name === planName);
+  if (plan) {
+    const isCompleted = workouts && workouts.some(w => w.name === plan.name);
     inner += `<div style="margin-top:${workouts && workouts.length ? 4 : 0}px;">
       <div style="font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;font-weight:700;">
         ${isCompleted ? '📋 תוכנית מקורית' : '📅 תוכנית מתוכננת'}
       </div>`;
-    if (plan) {
-      const exList = (plan.exercises || []).map(ex =>
-        `<li style="padding:7px 0;border-bottom:1px solid var(--border);font-size:14px;">${sanitize(ex.name || ex)} ${ex.sets ? '<span style="color:var(--text3);font-size:13px;">('+ex.sets.length+' סט)</span>' : ''}</li>`
-      ).join('');
-      inner += `<div style="background:var(--bg3);border-radius:14px;padding:14px;opacity:${isCompleted ? 0.7 : 1};">
-        <div style="font-weight:700;font-size:15px;margin-bottom:8px;">${sanitize(planName)}</div>
-        <ul style="list-style:none;padding:0;margin:0;">${exList}</ul>
-      </div>`;
-    } else {
-      inner += `<div style="color:var(--text3);font-size:14px;padding:8px 0;">${sanitize(planName)}</div>`;
-    }
-    inner += `</div>`;
-  } else if (isRest) {
-    inner += `<div style="text-align:center;padding:24px 0;color:var(--text3);">
-      <div style="font-size:40px;margin-bottom:8px;">🛌</div>
-      <div style="font-size:15px;font-weight:600;">יום מנוחה</div>
-      <div style="font-size:13px;margin-top:4px;">התאושש וחזור חזק יותר</div>
+    const exList = (plan.exercises || []).map(ex =>
+      `<li style="padding:7px 0;border-bottom:1px solid var(--border);font-size:14px;">${sanitize(ex.name || ex)} ${ex.sets ? '<span style="color:var(--text3);font-size:13px;">('+ex.sets.length+' סט)</span>' : ''}</li>`
+    ).join('');
+    inner += `<div style="background:var(--bg3);border-radius:14px;padding:14px;opacity:${isCompleted ? 0.7 : 1};">
+      <div style="font-weight:700;font-size:15px;margin-bottom:8px;">${sanitize(plan.name)}</div>
+      <ul style="list-style:none;padding:0;margin:0;">${exList}</ul>
     </div>`;
+    inner += `</div>`;
   }
 
   if (!inner) {
@@ -239,15 +224,12 @@ function showDayWorkouts(workouts, date) {
   });
 }
 
-// Start the plan assigned to a day by plan name
-function startDayPlan(planName) {
-  const plan = DB.plans.find(p => p.name === planName);
+// Start the plan assigned to a day by its stable ID.
+function startDayPlan(planId) {
+  const plan = DB.plans.find(p => p.id === Number(planId));
   if (plan) {
     startFromPlan(plan.id);
     showScreen('workout', document.querySelector('.nav-btn:nth-child(2)'));
-  } else {
-    // Plan name is set but no matching saved plan — open start-choice modal
-    showModal('modal-start-choice');
   }
 }
 
@@ -255,21 +237,18 @@ function renderTodayPlan() {
   const el = document.getElementById('todayPlan');
   const dayNames = ['sun','mon','tue','wed','thu','fri','sat'];
   const today = dayNames[new Date().getDay()];
-  const plan = DB.weekPlan[today];
-  const isRest = plan && plan.toLowerCase() === 'rest';
-  if (!plan) {
+  const planId = DB.weekPlan[today];
+  const matchingPlan = DB.plans.find(p => p.id === Number(planId));
+  if (!matchingPlan) {
     el.innerHTML = `<div style="font-size:13px;color:var(--text3)">לא הוגדרה תוכנית להיום &mdash; <span style="color:var(--accent);cursor:pointer" onclick="showModal('modal-week-plan')">הגדר לוח שבועי</span></div>`;
-  } else if (isRest) {
-    el.innerHTML = `<div style="font-size:16px;font-weight:700;color:var(--accent2)">🛏️ יום מנוחה</div><div style="font-size:12px;color:var(--text2);margin-top:4px">תתאושש וחזור חזק יותר</div>`;
   } else {
-    const matchingPlan = DB.plans.find(p => p.name === plan);
     el.innerHTML = `
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
         <div>
-          <div style="font-size:16px;font-weight:700;color:var(--accent)">${plan}</div>
-          <div style="font-size:12px;color:var(--text2);margin-top:2px">${matchingPlan ? matchingPlan.exercises.length + ' תרגילים' : 'לוח שבועי'}</div>
+          <div style="font-size:16px;font-weight:700;color:var(--accent)">${sanitize(matchingPlan.name)}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:2px">${matchingPlan.exercises.length} תרגילים</div>
         </div>
-        ${matchingPlan ? `<button class="btn btn-primary btn-sm" onclick="startDayPlan('${plan}')">&#9654; התחל</button>` : ''}
+        <button class="btn btn-primary btn-sm" onclick="startDayPlan(${Number(matchingPlan.id)})">&#9654; התחל</button>
       </div>`;
   }
 }

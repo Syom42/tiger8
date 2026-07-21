@@ -74,13 +74,13 @@ export const planExercises = pgTable('plan_exercises', {
 
 export const weekPlan = pgTable('week_plan', {
   userId: bigint('user_id', { mode: 'number' }).primaryKey().references(() => users.id, { onDelete: 'cascade' }),
-  sun:    text('sun').notNull().default(''),
-  mon:    text('mon').notNull().default(''),
-  tue:    text('tue').notNull().default(''),
-  wed:    text('wed').notNull().default(''),
-  thu:    text('thu').notNull().default(''),
-  fri:    text('fri').notNull().default(''),
-  sat:    text('sat').notNull().default(''),
+  sun:    bigint('sun', { mode: 'number' }).references(() => plans.id, { onDelete: 'set null' }),
+  mon:    bigint('mon', { mode: 'number' }).references(() => plans.id, { onDelete: 'set null' }),
+  tue:    bigint('tue', { mode: 'number' }).references(() => plans.id, { onDelete: 'set null' }),
+  wed:    bigint('wed', { mode: 'number' }).references(() => plans.id, { onDelete: 'set null' }),
+  thu:    bigint('thu', { mode: 'number' }).references(() => plans.id, { onDelete: 'set null' }),
+  fri:    bigint('fri', { mode: 'number' }).references(() => plans.id, { onDelete: 'set null' }),
+  sat:    bigint('sat', { mode: 'number' }).references(() => plans.id, { onDelete: 'set null' }),
 });
 
 export const personalRecords = pgTable('personal_records', {

@@ -5,7 +5,7 @@ const DB_DEFAULTS = {
   workouts: [],
   plans: [],
   weightLog: [],
-  weekPlan: { sun:'', mon:'', tue:'', wed:'', thu:'', fri:'', sat:'' },
+  weekPlan: { sun:null, mon:null, tue:null, wed:null, thu:null, fri:null, sat:null },
   prs: {},
   exercises: null,
   routineTemplates: null,
@@ -14,6 +14,35 @@ const DB_DEFAULTS = {
 
 let DB = { ...DB_DEFAULTS };
 let LOADED = null;
+
+function normalizeWeekPlan(value) {
+  const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+  return Object.fromEntries(days.map(day => {
+    const planId = Number(value?.[day]);
+    return [day, Number.isInteger(planId) && planId > 0 ? planId : null];
+  }));
+}
+
+function reconcilePrsFromWorkoutHistory() {
+  let changed = false;
+  DB.workouts.forEach(workout => {
+    workout.exercises.forEach(exercise => {
+      exercise.sets.forEach(set => {
+        const weight = Number(set.weight);
+        const reps = Number(set.reps);
+        if (!Number.isFinite(weight) || weight <= 0 || !Number.isInteger(reps) || reps <= 0) return;
+
+        const existing = DB.prs[exercise.name];
+        if (!existing || weight > Number(existing.weight) ||
+          (weight === Number(existing.weight) && reps > Number(existing.reps))) {
+          DB.prs[exercise.name] = { weight, reps, date: workout.date };
+          changed = true;
+        }
+      });
+    });
+  });
+  return changed;
+}
 
 // ─── Fetch helper (cookie auth) ──────────────────────────────────────────────
 
@@ -77,7 +106,7 @@ async function loadDB() {
       exercises: (p.exercises || []).filter(Boolean).map(e => ({ name: e.exercise_name, restSeconds: e.rest_seconds })),
     }));
 
-    DB.weekPlan = weekPlan;
+    DB.weekPlan = normalizeWeekPlan(weekPlan);
     DB.prs = prs;
     DB.weightLog = weightLog.map(w => ({ id: w.id, weight: w.weight, date: w.date, note: w.note }));
     DB.supplements = supplements.map(s => ({
@@ -97,10 +126,15 @@ async function loadDB() {
   }
 
   migrateDB();
+  const prsReconciled = reconcilePrsFromWorkoutHistory();
   LOADED = JSON.parse(JSON.stringify(DB));
 
   if (!LOADED.exercises?.length && DB.exercises?.length) {
     _dirty.add('exercises');
+    saveDB();
+  }
+  if (prsReconciled) {
+    _dirty.add('prs');
     saveDB();
   }
 }

@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
-import { and, eq, asc, inArray } from 'drizzle-orm';
+import { and, eq, asc, inArray, sql } from 'drizzle-orm';
 import { db } from '../db/client.js';
-import { plans, planExercises } from '../db/schema.js';
+import { plans, planExercises, weekPlan } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 import { PlanSchema, PlanDeleteSchema } from '../validators/schemas.js';
 
@@ -67,7 +67,18 @@ app.post('/plans', zValidator('json', PlanSchema), async (c) => {
 app.delete('/plans', zValidator('json', PlanDeleteSchema), async (c) => {
   const uid = c.get('uid');
   const { id } = c.req.valid('json');
-  await db.delete(plans).where(and(eq(plans.id, id), eq(plans.userId, uid)));
+  await db.transaction(async (tx) => {
+    const [plan] = await tx.select({ id: plans.id }).from(plans)
+      .where(and(eq(plans.id, id), eq(plans.userId, uid)));
+    if (!plan) return;
+
+    const clearPlan = (day) => sql`case when ${day} = ${id} then null else ${day} end`;
+    await tx.update(weekPlan).set({
+      sun: clearPlan(weekPlan.sun), mon: clearPlan(weekPlan.mon), tue: clearPlan(weekPlan.tue),
+      wed: clearPlan(weekPlan.wed), thu: clearPlan(weekPlan.thu), fri: clearPlan(weekPlan.fri), sat: clearPlan(weekPlan.sat),
+    }).where(eq(weekPlan.userId, uid));
+    await tx.delete(plans).where(eq(plans.id, id));
+  });
   return c.json({ ok: true });
 });
 

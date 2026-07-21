@@ -250,18 +250,21 @@ function applyTemplate(key) {
   if (!t) return;
 
   // Read user's day selections from checkboxes
-  const newWeekPlan = { sun:'', mon:'', tue:'', wed:'', thu:'', fri:'', sat:'' };
-  document.querySelectorAll('#templatePreview input[type=checkbox]').forEach(cb => {
-    if (cb.checked) newWeekPlan[cb.dataset.day] = cb.dataset.plan;
-  });
-
   db.update(d => {
-    Object.assign(d.weekPlan, newWeekPlan);
+    const planIdsByName = new Map(d.plans.map(plan => [plan.name, plan.id]));
     t.plans.forEach(tp => {
       if (!d.plans.some(p => p.name === tp.name)) {
-        d.plans.push({ id: Date.now() + Math.floor(Math.random() * 1000), name: tp.name, desc: t.nameHe, exercises: tp.exercises.map(name => ({ name, restSeconds: 90 })) });
+        const id = Date.now() + Math.floor(Math.random() * 1000);
+        d.plans.push({ id, name: tp.name, desc: t.nameHe, exercises: tp.exercises.map(name => ({ name, restSeconds: 90 })) });
+        planIdsByName.set(tp.name, id);
       }
     });
+
+    const newWeekPlan = { sun:null, mon:null, tue:null, wed:null, thu:null, fri:null, sat:null };
+    document.querySelectorAll('#templatePreview input[type=checkbox]').forEach(cb => {
+      if (cb.checked) newWeekPlan[cb.dataset.day] = planIdsByName.get(cb.dataset.plan) ?? null;
+    });
+    Object.assign(d.weekPlan, newWeekPlan);
   });
   renderPlans();
   renderTodayPlan();
