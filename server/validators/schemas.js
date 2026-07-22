@@ -1,8 +1,10 @@
 // All request-body schemas in one place.
 import { z } from 'zod';
 
-const nonEmpty = z.string().min(1);
-const optStr = z.string().optional().nullable();
+const nonEmpty = z.string().trim().min(1).max(160);
+const optStr = z.string().trim().max(1000).optional().nullable();
+const positiveInteger = z.coerce.number().int().positive();
+const finiteNumber = z.coerce.number().finite();
 
 export const LoginSchema  = z.object({ email: z.string().email(), password: nonEmpty });
 
@@ -14,13 +16,13 @@ export const SignupSchema = z.object({
 });
 
 export const ProfileSchema = z.object({
-  name:   optStr,
-  age:    z.number().int().nullable().optional(),
-  height: z.union([z.number(), z.string()]).nullable().optional(),
+  name:   z.string().trim().min(1).max(120).nullable().optional(),
+  age:    z.coerce.number().int().min(13).max(120).nullable().optional(),
+  height: finiteNumber.min(50).max(300).nullable().optional(),
   goal:   optStr,
 });
 
-const PlanIdSchema = z.number().int().positive().nullable().optional();
+const PlanIdSchema = positiveInteger.nullable().optional();
 export const WeekPlanSchema = z.object({
   sun: PlanIdSchema,
   mon: PlanIdSchema,
@@ -39,7 +41,7 @@ export const PrsSchema = z.record(z.string(), z.object({
 }));
 
 export const ExerciseSchema = z.object({
-  id:          nonEmpty,
+  id:          nonEmpty.optional(),
   name:        nonEmpty,
   muscle:      nonEmpty,
   description: optStr,
@@ -60,7 +62,7 @@ const WorkoutExerciseSchema = z.object({
 });
 
 export const WorkoutSchema = z.object({
-  id:        z.number().int().or(z.string().regex(/^\d+$/).transform(Number)),
+  id:        z.number().int().or(z.string().regex(/^\d+$/).transform(Number)).optional(),
   name:      nonEmpty,
   muscles:   z.array(z.string()).optional(),
   date:      nonEmpty, // ISO string
@@ -83,7 +85,7 @@ const PlanExerciseInput = z.union([
 ]);
 
 export const PlanSchema = z.object({
-  id:          z.number().int().or(z.string().regex(/^\d+$/).transform(Number)),
+  id:          z.number().int().or(z.string().regex(/^\d+$/).transform(Number)).optional(),
   name:        nonEmpty,
   description: optStr,
   exercises:   z.array(PlanExerciseInput).optional(),
@@ -94,8 +96,8 @@ export const PlanDeleteSchema = z.object({
 });
 
 export const WeightCreateSchema = z.object({
-  weight: z.union([z.number(), z.string()]),
-  date:   nonEmpty,
+  weight: finiteNumber.min(20).max(500),
+  date:   z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'invalid date'),
   note:   optStr,
 });
 
@@ -104,7 +106,7 @@ export const WeightDeleteSchema = z.object({
 });
 
 export const SupplementUpsertSchema = z.object({
-  id:      nonEmpty,
+  id:      nonEmpty.optional(),
   name:    nonEmpty,
   dose:    optStr,
   time:    optStr,
@@ -121,9 +123,9 @@ export const SupplementDeleteSchema = z.object({ id: nonEmpty });
 
 export const CoachSchema = z.object({
   messages: z.array(z.object({
-    role:    z.enum(['system', 'user', 'assistant']),
-    content: z.string(),
-  })).min(1),
-  temperature: z.number().optional(),
-  max_tokens:  z.number().int().optional(),
-});
+    role:    z.enum(['user', 'assistant']),
+    content: z.string().trim().min(1).max(2000),
+  })).min(1).max(12),
+  temperature: z.number().min(0).max(1).optional(),
+  max_tokens:  z.number().int().min(1).max(512).optional(),
+}).strict();

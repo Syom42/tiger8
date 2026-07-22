@@ -17,3 +17,5 @@ android/app/release/
 android/app/debug/
 .vercel
 .env*
+!.env.example
+dist/

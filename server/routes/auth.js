@@ -2,6 +2,8 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { HTTPException } from 'hono/http-exception';
+import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
+import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { users, userProfiles } from '../db/schema.js';
@@ -11,8 +13,33 @@ import {
   requireAuth, getSession,
 } from '../middleware/auth.js';
 import { LoginSchema, SignupSchema } from '../validators/schemas.js';
+import { rateLimit } from '../middleware/rateLimit.js';
 
 const app = new Hono();
+const OAUTH_STATE_COOKIE = 'tiger8_oauth_state';
+const OAUTH_STATE_MAX_AGE = 60 * 5;
+
+app.use('/auth/*', rateLimit({ key: 'auth', max: 20, windowMs: 60_000 }));
+app.use('/auth/login', rateLimit({ key: 'login', max: 5, windowMs: 60_000 }));
+app.use('/auth/signup', rateLimit({ key: 'signup', max: 5, windowMs: 60_000 }));
+
+function setOAuthState(c, state) {
+  const environment = env();
+  setCookie(c, OAUTH_STATE_COOKIE, state, {
+    path: '/',
+    httpOnly: true,
+    sameSite: 'Lax',
+    secure: environment.VERCEL_ENV === 'production' || environment.NODE_ENV === 'production',
+    maxAge: OAUTH_STATE_MAX_AGE,
+  });
+}
+
+function stateMatches(expected, actual) {
+  if (!expected || !actual) return false;
+  const expectedBuffer = Buffer.from(expected);
+  const actualBuffer = Buffer.from(actual);
+  return expectedBuffer.length === actualBuffer.length && timingSafeEqual(expectedBuffer, actualBuffer);
+}
 
 function googleConfig() {
   const e = env();
@@ -66,6 +93,8 @@ app.post('/auth/signup', zValidator('json', SignupSchema), async (c) => {
 
 app.get('/auth/google', (c) => {
   const { clientId, redirectUri } = googleConfig();
+  const state = randomBytes(32).toString('base64url');
+  setOAuthState(c, state);
   const params = new URLSearchParams({
     client_id:     clientId,
     redirect_uri:  redirectUri,
@@ -73,13 +102,17 @@ app.get('/auth/google', (c) => {
     scope:         'openid email profile',
     access_type:   'offline',
     prompt:        'select_account',
+    state,
   });
   return c.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params}`, 302);
 });
 
 app.get('/auth/google-callback', async (c) => {
   const code = c.req.query('code');
-  if (!code) return c.redirect('/login.html', 302);
+  const state = c.req.query('state');
+  const expectedState = getCookie(c, OAUTH_STATE_COOKIE);
+  deleteCookie(c, OAUTH_STATE_COOKIE, { path: '/' });
+  if (!code || !stateMatches(expectedState, state)) return c.redirect('/login.html', 302);
 
   const { clientId, clientSecret, redirectUri } = googleConfig();
 
@@ -91,14 +124,16 @@ app.get('/auth/google-callback', async (c) => {
       redirect_uri: redirectUri, grant_type: 'authorization_code',
     }),
   });
-  const tokens = await tokenRes.json();
-  if (!tokens.access_token) return c.redirect('/login.html', 302);
+  const tokens = await tokenRes.json().catch(() => null);
+  if (!tokenRes.ok || typeof tokens?.access_token !== 'string') return c.redirect('/login.html', 302);
 
   const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
     headers: { Authorization: `Bearer ${tokens.access_token}` },
   });
-  const profile = await userRes.json();
-  if (!profile.email) return c.redirect('/login.html', 302);
+  const profile = await userRes.json().catch(() => null);
+  if (!userRes.ok || typeof profile?.email !== 'string' || profile.verified_email !== true) {
+    return c.redirect('/login.html', 302);
+  }
 
   const email = profile.email.toLowerCase();
 

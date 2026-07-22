@@ -1,5 +1,7 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
+import { HTTPException } from 'hono/http-exception';
+import { randomInt } from 'node:crypto';
 import { and, eq, asc, inArray, sql } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { plans, planExercises, weekPlan } from '../db/schema.js';
@@ -38,14 +40,23 @@ app.get('/plans', async (c) => {
 
 app.post('/plans', zValidator('json', PlanSchema), async (c) => {
   const uid = c.get('uid');
-  const { id, name, description, exercises } = c.req.valid('json');
+  const { id: requestedId, name, description, exercises } = c.req.valid('json');
+  const id = requestedId ?? randomInt(1, 2 ** 48);
 
   await db.transaction(async (tx) => {
-    await tx.insert(plans).values({ id, userId: uid, name, description: description ?? null })
-      .onConflictDoUpdate({
-        target: plans.id,
-        set: { name, description: description ?? null },
-      });
+    const [existing] = await tx.select({ userId: plans.userId }).from(plans)
+      .where(eq(plans.id, id));
+    if (existing && existing.userId !== uid) {
+      throw new HTTPException(404, { message: 'plan not found' });
+    }
+
+    if (existing) {
+      await tx.update(plans)
+        .set({ name, description: description ?? null })
+        .where(and(eq(plans.id, id), eq(plans.userId, uid)));
+    } else {
+      await tx.insert(plans).values({ id, userId: uid, name, description: description ?? null });
+    }
 
     await tx.delete(planExercises).where(eq(planExercises.planId, id));
 

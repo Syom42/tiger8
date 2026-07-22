@@ -1,0 +1,31 @@
+html,
+body,
+#root {
+	min-height: 100%;
+}
+
+html {
+	min-height: 100dvh;
+	background: var(--background);
+	-webkit-tap-highlight-color: transparent;
+}
+
+body {
+	min-height: 100dvh;
+	margin: 0;
+	overscroll-behavior-y: none;
+}
+
+@media (display-mode: standalone) {
+	body {
+		user-select: none;
+		-webkit-user-select: none;
+	}
+
+	input,
+	textarea,
+	[contenteditable="true"] {
+		user-select: text;
+		-webkit-user-select: text;
+	}
+}
