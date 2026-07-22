@@ -1,7 +1,7 @@
 {
   "appId": "com.tiger8.app",
   "appName": "Tiger8",
-  "webDir": "www",
+  "webDir": "public",
   "server": {
     "androidScheme": "https"
   },
