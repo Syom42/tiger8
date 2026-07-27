@@ -124,7 +124,6 @@ export function Dialog({
   className?: string;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
-  const backdropPointerDown = useRef(false);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -148,14 +147,7 @@ export function Dialog({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center p-4"
-      onPointerDown={event => { backdropPointerDown.current = event.target === event.currentTarget; }}
-      onClick={event => {
-        if (event.target === event.currentTarget && backdropPointerDown.current) onClose();
-        backdropPointerDown.current = false;
-      }}
-    >
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center p-4">
       <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={labelId} tabIndex={-1} onKeyDown={trapFocus} className={cn("w-full bg-card border border-border rounded-lg", className)}>
         {children}
       </div>
