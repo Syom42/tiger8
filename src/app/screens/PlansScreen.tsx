@@ -43,6 +43,11 @@ export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onS
     setExerciseText(tpl.exercises.join("\n"));
   };
 
+  const openTemplate = (key: string) => {
+    loadTemplate(key);
+    setShowCreate(true);
+  };
+
   const saveNewPlan = async () => {
     const exercises = exerciseText.split(/\r?\n|,/).map(item => item.trim()).filter(Boolean);
     if (!name.trim() || saving) return;
@@ -88,6 +93,24 @@ export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onS
           תוכנית חדשה
         </Btn>
       </div>
+
+      <Card className="p-4">
+        <SectionLabel>התחל מתבנית</SectionLabel>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <button type="button" onClick={() => openTemplate("push")} className="rounded border border-border p-3 text-right hover:border-primary/50 hover:bg-primary/5 transition-colors">
+            <p className="text-sm font-semibold">Push / Pull / Legs</p>
+            <p className="text-xs text-muted-foreground mt-1">התחל עם אימון Push</p>
+          </button>
+          <button type="button" onClick={() => openTemplate("fullA")} className="rounded border border-border p-3 text-right hover:border-primary/50 hover:bg-primary/5 transition-colors">
+            <p className="text-sm font-semibold">Full Body</p>
+            <p className="text-xs text-muted-foreground mt-1">התחל עם Full Body A</p>
+          </button>
+          <button type="button" onClick={() => openTemplate("upper")} className="rounded border border-border p-3 text-right hover:border-primary/50 hover:bg-primary/5 transition-colors">
+            <p className="text-sm font-semibold">Upper / Lower</p>
+            <p className="text-xs text-muted-foreground mt-1">התחל עם אימון Upper</p>
+          </button>
+        </div>
+      </Card>
 
       <div className="relative">
         <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />

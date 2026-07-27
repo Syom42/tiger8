@@ -29,7 +29,11 @@ body {
 		max-width: 100% !important;
 	}
 
-	.p-6 {
+	main > div:not([role="status"]) {
+		padding: 1rem !important;
+	}
+
+	.p-6, .p-5 {
 		padding: 1rem !important;
 	}
 
@@ -47,6 +51,14 @@ body {
 
 	.text-3xl {
 		font-size: 1.5rem !important;
+	}
+
+	.space-y-6 > :not([hidden]) ~ :not([hidden]) {
+		margin-top: 1rem !important;
+	}
+
+	.space-y-5 > :not([hidden]) ~ :not([hidden]) {
+		margin-top: 0.875rem !important;
 	}
 }
 

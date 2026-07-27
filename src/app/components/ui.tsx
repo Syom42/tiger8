@@ -131,8 +131,7 @@ export function Dialog({
       if (event.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKeyDown);
-    const firstFocusable = dialogRef.current?.querySelector<HTMLElement>("button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled])");
-    firstFocusable?.focus();
+    dialogRef.current?.focus({ preventScroll: true });
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
 
