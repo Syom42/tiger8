@@ -16,6 +16,40 @@ body {
 	overscroll-behavior-y: none;
 }
 
+/* Prevent iOS zoom on input focus */
+@media (max-width: 768px) {
+	input, select, textarea {
+		font-size: 16px !important;
+	}
+}
+
+/* Phone-adaptive: prevent horizontal overflow */
+@media (max-width: 480px) {
+	.max-w-4xl, .max-w-3xl, .max-w-2xl {
+		max-width: 100% !important;
+	}
+
+	.p-6 {
+		padding: 1rem !important;
+	}
+
+	.grid-cols-2 {
+		grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+	}
+
+	.grid-cols-3 {
+		grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+	}
+
+	.text-2xl {
+		font-size: 1.375rem !important;
+	}
+
+	.text-3xl {
+		font-size: 1.5rem !important;
+	}
+}
+
 @media (display-mode: standalone) {
 	body {
 		user-select: none;
