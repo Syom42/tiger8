@@ -1,5 +1,7 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
+import { HTTPException } from 'hono/http-exception';
+import { randomUUID } from 'node:crypto';
 import { and, eq, isNull, or, asc } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { exercises } from '../db/schema.js';
@@ -22,14 +24,24 @@ app.get('/exercises', async (c) => {
 
 app.post('/exercises', zValidator('json', ExerciseSchema), async (c) => {
   const uid = c.get('uid');
-  const { id, name, muscle, description } = c.req.valid('json');
-  await db.insert(exercises).values({
-    id, userId: uid, name, muscle, description: description ?? null, isCustom: true,
-  }).onConflictDoUpdate({
-    target: exercises.id,
-    set: { name, muscle, description: description ?? null },
-  });
-  return c.json({ ok: true });
+  const { id: requestedId, name, muscle, description } = c.req.valid('json');
+  const id = requestedId ?? `custom_${randomUUID()}`;
+  const [existing] = await db.select({ userId: exercises.userId }).from(exercises)
+    .where(eq(exercises.id, id));
+  if (existing && existing.userId !== uid) {
+    throw new HTTPException(404, { message: 'exercise not found' });
+  }
+
+  if (existing) {
+    await db.update(exercises)
+      .set({ name, muscle, description: description ?? null })
+      .where(and(eq(exercises.id, id), eq(exercises.userId, uid)));
+  } else {
+    await db.insert(exercises).values({
+      id, userId: uid, name, muscle, description: description ?? null, isCustom: true,
+    });
+  }
+  return c.json({ ok: true, id });
 });
 
 app.delete('/exercises', zValidator('json', ExerciseDeleteSchema), async (c) => {

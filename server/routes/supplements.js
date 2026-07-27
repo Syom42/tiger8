@@ -1,5 +1,7 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
+import { HTTPException } from 'hono/http-exception';
+import { randomUUID } from 'node:crypto';
 import { and, eq, lt, sql } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { supplements, supplementTaken } from '../db/schema.js';
@@ -33,18 +35,31 @@ app.get('/supplements', async (c) => {
 
 app.post('/supplements', zValidator('json', SupplementUpsertSchema), async (c) => {
   const uid = c.get('uid');
-  const { id, name, dose, time, enabled } = c.req.valid('json');
-  await db.insert(supplements)
-    .values({ id, userId: uid, name, dose: dose ?? null, time: time ?? null, enabled: enabled ?? true })
-    .onConflictDoUpdate({
-      target: supplements.id,
-      set: { name, dose: dose ?? null, time: time ?? null, enabled: enabled ?? true },
-    });
-  return c.json({ ok: true });
+  const { id: requestedId, name, dose, time, enabled } = c.req.valid('json');
+  const id = requestedId ?? `supp_${randomUUID()}`;
+  const [existing] = await db.select({ userId: supplements.userId }).from(supplements)
+    .where(eq(supplements.id, id));
+  if (existing && existing.userId !== uid) {
+    throw new HTTPException(404, { message: 'supplement not found' });
+  }
+
+  if (existing) {
+    await db.update(supplements)
+      .set({ name, dose: dose ?? null, time: time ?? null, enabled: enabled ?? true })
+      .where(and(eq(supplements.id, id), eq(supplements.userId, uid)));
+  } else {
+    await db.insert(supplements)
+      .values({ id, userId: uid, name, dose: dose ?? null, time: time ?? null, enabled: enabled ?? true });
+  }
+  return c.json({ ok: true, id });
 });
 
 app.put('/supplements', zValidator('json', SupplementTakenSchema), async (c) => {
+  const uid = c.get('uid');
   const { id, date, taken } = c.req.valid('json');
+  const [supplement] = await db.select({ id: supplements.id }).from(supplements)
+    .where(and(eq(supplements.id, id), eq(supplements.userId, uid)));
+  if (!supplement) throw new HTTPException(404, { message: 'supplement not found' });
   if (taken) {
     await db.insert(supplementTaken).values({ supplementId: id, takenDate: date }).onConflictDoNothing();
   } else {

@@ -1,0 +1,3 @@
+# Figma's source export is retained as a local design reference.
+# The production client has been copied to /src and does not depend on this workspace.
+figmazip/

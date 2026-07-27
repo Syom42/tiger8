@@ -1,8 +1,10 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
+import { HTTPException } from 'hono/http-exception';
+import { randomInt } from 'node:crypto';
 import { and, eq, desc, asc, inArray } from 'drizzle-orm';
 import { db } from '../db/client.js';
-import { workouts, workoutExercises, workoutSets } from '../db/schema.js';
+import { workouts, workoutExercises, workoutSets, personalRecords } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 import { WorkoutSchema, WorkoutDeleteSchema } from '../validators/schemas.js';
 
@@ -57,15 +59,22 @@ app.get('/workouts', async (c) => {
 
 app.post('/workouts', zValidator('json', WorkoutSchema), async (c) => {
   const uid = c.get('uid');
-  const { id, name, muscles, date, duration, exercises } = c.req.valid('json');
+  const { id: requestedId, name, muscles, date, duration, exercises } = c.req.valid('json');
+  const id = requestedId ?? randomInt(1, 2 ** 48);
 
   // Atomic: workout + all exercises + all sets in a single transaction.
   await db.transaction(async (tx) => {
+    const [existingWorkout] = await tx.select({ id: workouts.id }).from(workouts)
+      .where(eq(workouts.id, id));
+    if (existingWorkout) {
+      throw new HTTPException(409, { message: 'workout already exists' });
+    }
+
     await tx.insert(workouts).values({
       id, userId: uid, name,
       muscles: muscles ?? [], date: new Date(date),
       duration: duration ?? null,
-    }).onConflictDoNothing();
+    });
 
     const exArr = exercises ?? [];
     for (let i = 0; i < exArr.length; i++) {
@@ -85,10 +94,44 @@ app.post('/workouts', zValidator('json', WorkoutSchema), async (c) => {
           sortOrder: j,
         })));
       }
+
+      const bestSet = setsArr
+        .filter(set => set.done)
+        .map(set => ({ weight: Number(set.weight), reps: Number(set.reps) || 0 }))
+        .filter(set => Number.isFinite(set.weight) && set.weight > 0)
+        .sort((first, second) => second.weight - first.weight || second.reps - first.reps)[0];
+
+      if (!bestSet) continue;
+
+      const [existingPr] = await tx.select({
+        weight: personalRecords.weight,
+        reps: personalRecords.reps,
+      }).from(personalRecords).where(and(
+        eq(personalRecords.userId, uid),
+        eq(personalRecords.exerciseName, ex.name),
+      ));
+
+      const existingWeight = Number(existingPr?.weight);
+      const existingReps = Number(existingPr?.reps) || 0;
+      if (existingPr && (bestSet.weight < existingWeight ||
+        (bestSet.weight === existingWeight && bestSet.reps <= existingReps))) {
+        continue;
+      }
+
+      await tx.insert(personalRecords).values({
+        userId: uid,
+        exerciseName: ex.name,
+        weight: String(bestSet.weight),
+        reps: bestSet.reps,
+        achievedAt: new Date(date),
+      }).onConflictDoUpdate({
+        target: [personalRecords.userId, personalRecords.exerciseName],
+        set: { weight: String(bestSet.weight), reps: bestSet.reps, achievedAt: new Date(date) },
+      });
     }
   });
 
-  return c.json({ ok: true });
+  return c.json({ ok: true, id });
 });
 
 app.delete('/workouts', zValidator('json', WorkoutDeleteSchema), async (c) => {

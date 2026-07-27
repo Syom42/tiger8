@@ -1,0 +1,126 @@
+Design a complete, high-fidelity responsive product UI for “Tiger8”, a Hebrew RTL strength-training tracker for serious gym users.
+
+This is an application UI, not a landing page. It must feel like a refined, calm, modern training log used repeatedly during real workouts. Prioritize speed, clarity, data entry, progress visibility, and reliable offline/sync feedback.
+
+PRODUCT AND USERS
+- Tiger8 helps users create training plans, schedule plans by week, log sets/reps/weight during a workout, track history and progression, record personal records, track body weight and supplements, and use an optional AI coach.
+- Primary audience: Hebrew-speaking gym users tracking strength and hypertrophy.
+- Primary language: Hebrew with RTL layout.
+- Exercise names may be English. Design mixed Hebrew/English content correctly, with English exercise names readable left-to-right inside RTL screens.
+- Show realistic Hebrew copy and realistic workout data. Do not use lorem ipsum.
+
+VISUAL DIRECTION
+- Visual language: precise athletic editorial utility. Calm, focused, information-dense, polished.
+- Avoid marketing-page composition, oversized hero text, decorative blobs, glassmorphism, purple gradients, excessive rounded cards, stock photos, or excessive emoji.
+- Use charcoal/graphite for dark theme and warm off-white/stone for light theme.
+- Primary action color: deep forest green.
+- Success/progression: restrained green.
+- Destructive/warning: coral red.
+- Personal-record moments only: restrained gold.
+- Use a contemporary Hebrew font such as Heebo, Assistant, or Noto Sans Hebrew.
+- Use an 8px spacing system.
+- Maximum border radius: 8px for cards, inputs, menus, and buttons.
+- Use clear visual hierarchy, accessible contrast, compact labels, and at least 44px touch targets for mobile controls.
+- Use Lucide-style icons, not custom illustrated icons.
+- Support light and dark themes. Show both for the core screens.
+
+RESPONSIVE LAYOUT
+Create designs at all three sizes:
+1. Mobile: 390px wide, bottom navigation, optimized for one-handed workout logging.
+2. Tablet: 768px wide, adaptive two-column layouts where useful.
+3. Desktop: 1440px wide, persistent sidebar and data-rich workspace layouts.
+
+DESIGN SYSTEM PAGE
+Include a dedicated design-system page containing:
+- Semantic color tokens for dark and light modes: page, surface, elevated surface, text primary/secondary/muted, border, primary, primary-hover, success, warning, danger, gold/PR, overlay.
+- Typography tokens: display, H1, H2, H3, body, label, caption, numeric metric.
+- Spacing tokens from 4px to 48px using the 8px system.
+- Radius, border, elevation, focus-ring, and motion tokens.
+- Button variants: primary, secondary, quiet/icon-only, destructive, loading, disabled.
+- Input variants: text, number, select, search, validation error, disabled.
+- Card variants: standard, compact, interactive, warning.
+- Tabs, segmented controls, chips, badges, tooltips, dialogs, bottom sheets, dropdown menus, toast notifications, skeletons, empty states, error states, and sync-status states.
+- All component hover, focus, selected, loading, empty, disabled, and error states.
+
+NAVIGATION
+- Mobile bottom navigation: Home, Workouts, Progress, Profile, Coach.
+- Desktop sidebar: Home, Plans, Active Workout when applicable, History, Progress, Body Weight, Supplements, Profile, Coach.
+- Show active navigation, page title, sync indicator, and theme toggle.
+- Sync status must visibly communicate: saved, saving, offline changes pending, and sync failed with retry.
+
+REQUIRED SCREENS AND FLOWS
+
+1. HOME DASHBOARD
+- Personalized greeting, compact weekly compliance/streak, today’s scheduled plan, recent workout summary, body-weight trend, and a clear “Start workout” command.
+- Weekly calendar must show assigned plan, rest day, completed workout, and missed plan states.
+- Avoid a dashboard made entirely of floating cards; use a structured working surface.
+
+2. PLANS LIBRARY
+- Searchable/filterable plan list.
+- Plan rows/cards with exercise count, last used, scheduled days, start, edit, duplicate, and delete actions.
+- Create/edit plan form: plan name, description, ordered exercises, rest duration, drag/reorder affordance.
+- Use tables/lists for operational information where clearer than cards.
+
+3. WEEKLY PLAN EDITOR
+- A seven-day schedule.
+- Each day supports selecting one existing plan or rest/unassigned.
+- Show that plans remain synchronized when renamed and are removed from the schedule when deleted.
+- Make editing fast on mobile and desktop.
+
+4. ACTIVE WORKOUT
+- This is the most important screen.
+- Show current workout name, elapsed time, sync/draft state, exercise order, rest timer, and an interruption-safe save state.
+- Each exercise has a concise set table with set number, previous performance, weight input, reps input, completion checkbox, add/remove set actions, and exercise overflow menu.
+- Include an accessible sticky finish-workout action.
+- Show subtle PR feedback only when a user reaches a heavier actual weight.
+- Include a compact pause/leave confirmation state and offline queued-save state.
+- Optimize for fast one-handed mobile data entry.
+
+5. WORKOUT HISTORY
+- Dense chronological list with date, duration, exercise count, training volume, and status.
+- Detail view for a completed workout with all logged sets.
+- Filters by date, plan, and exercise.
+- Include a confirmation dialog before deletion.
+
+6. PROGRESS
+- Exercise progression charts with date range and exercise selector.
+- Show maximum actual load prominently, recent trend, total sessions, training volume, and consistent chart tooltips.
+- Include a personal-record screen where the all-time highest actual weight is primary; reps are secondary and only break equal-weight ties.
+- Preserve session-by-session progression even when the all-time record is unchanged.
+
+7. BODY WEIGHT
+- Weight trend chart, logs table/list, add entry, notes, delta from prior entry, and empty state.
+
+8. SUPPLEMENTS
+- Today’s checklist, adherence state, dosage/time, edit/add flow, and reminder-permission state.
+
+9. PROFILE AND SETTINGS
+- Profile summary, theme, weekly plan, templates, exercise library, export, notification settings, and clear-data destructive flow.
+
+10. AI COACH
+- A compact utility chat layout.
+- It should not dominate the product’s visual identity.
+- Show suggestions that can be reviewed and accepted safely, with clear effects on the schedule or plans.
+
+STATE SCREENS
+For Home, Plans, Active Workout, and Progress, include:
+- First-use empty state
+- Loading skeleton
+- API error
+- Offline mode
+- Pending sync
+- Sync failure with retry
+- Success toast
+- Personal-record success moment
+- Destructive confirmation dialog
+
+ACCESSIBILITY AND IMPLEMENTATION NOTES
+- Specify keyboard focus order and visible focus states.
+- Use semantic labels and clear icon tooltips.
+- Use CSS logical layout conventions suitable for RTL.
+- Do not rely only on color to communicate status.
+- Ensure all text fits in both Hebrew and English exercise-name examples.
+- Add annotations for key spacing, breakpoint changes, component behavior, and motion timing.
+- Include a developer handoff page mapping each screen to reusable components and data states.
+
+Deliver a cohesive design file with mobile, tablet, desktop, dark, and light variants. The final result must look production-ready and realistic for a React + TypeScript fitness application.
