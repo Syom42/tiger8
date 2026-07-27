@@ -11,6 +11,40 @@ import { WorkoutSchema, WorkoutDeleteSchema } from '../validators/schemas.js';
 const app = new Hono();
 app.use('/workouts', requireAuth);
 
+async function rebuildPersonalRecords(tx, uid) {
+  const rows = await tx.select({
+    exerciseName: workoutExercises.exerciseName,
+    weight: workoutSets.weight,
+    reps: workoutSets.reps,
+    date: workouts.date,
+  }).from(workouts)
+    .innerJoin(workoutExercises, eq(workoutExercises.workoutId, workouts.id))
+    .innerJoin(workoutSets, eq(workoutSets.workoutExerciseId, workoutExercises.id))
+    .where(and(eq(workouts.userId, uid), eq(workoutSets.done, true)));
+
+  const bestByExercise = new Map();
+  for (const row of rows) {
+    const weight = Number(row.weight);
+    const reps = Number(row.reps) || 0;
+    if (!Number.isFinite(weight) || weight <= 0) continue;
+    const current = bestByExercise.get(row.exerciseName);
+    if (!current || weight > current.weight || (weight === current.weight && reps > current.reps)) {
+      bestByExercise.set(row.exerciseName, { weight, reps, date: row.date });
+    }
+  }
+
+  await tx.delete(personalRecords).where(eq(personalRecords.userId, uid));
+  if (bestByExercise.size) {
+    await tx.insert(personalRecords).values([...bestByExercise.entries()].map(([exerciseName, record]) => ({
+      userId: uid,
+      exerciseName,
+      weight: String(record.weight),
+      reps: record.reps,
+      achievedAt: record.date,
+    })));
+  }
+}
+
 app.get('/workouts', async (c) => {
   const uid = c.get('uid');
   // Drizzle relational query is the natural way to do nested fetch, but we
@@ -137,7 +171,10 @@ app.post('/workouts', zValidator('json', WorkoutSchema), async (c) => {
 app.delete('/workouts', zValidator('json', WorkoutDeleteSchema), async (c) => {
   const uid = c.get('uid');
   const { id } = c.req.valid('json');
-  await db.delete(workouts).where(and(eq(workouts.id, id), eq(workouts.userId, uid)));
+  await db.transaction(async (tx) => {
+    await tx.delete(workouts).where(and(eq(workouts.id, id), eq(workouts.userId, uid)));
+    await rebuildPersonalRecords(tx, uid);
+  });
   return c.json({ ok: true });
 });
 

@@ -1,12 +1,25 @@
 import { useState } from "react";
-import { Dumbbell, Clock, BarChart3 } from "lucide-react";
+import { Dumbbell, Clock, BarChart3, Trash2, Loader2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { cn, Card, SectionLabel, Btn, StatCard, EmptyState } from "../components/ui";
 import { type BootstrapData } from "../../lib/api";
+import { deleteWorkout } from "../../features/workouts/api";
 import { formatWorkoutDate, summarizeWorkout, weeklyVolume } from "../../features/history/metrics";
 
-export function HistoryScreen({ data }: { data: BootstrapData | null }) {
+export function HistoryScreen({ data, onSaved }: { data: BootstrapData | null; onSaved: () => Promise<void> }) {
   const [view, setView] = useState<"list" | "chart">("list");
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  const removeWorkout = async (id: number, name: string) => {
+    if (!window.confirm(`לבטל את האימון "${name}"? הפעולה תסיר אותו מהיסטוריית האימונים, מהנפח ומהשיאים.`)) return;
+    setDeletingId(id);
+    try {
+      await deleteWorkout(id);
+      await onSaved();
+    } finally {
+      setDeletingId(null);
+    }
+  };
   const workouts = data?.workouts ?? [];
   const summaries = workouts.map(summarizeWorkout);
   const totalDurationMinutes = summaries.reduce((total, workout) => total + workout.durationMinutes, 0);
@@ -81,6 +94,9 @@ export function HistoryScreen({ data }: { data: BootstrapData | null }) {
                     <p className="font-mono font-semibold text-sm">{workout.volume.toLocaleString("he-IL")} <span className="text-xs font-normal text-muted-foreground">ק״ג</span></p>
                     <p className="text-xs text-muted-foreground">נפח</p>
                   </div>
+                  <button type="button" onClick={() => void removeWorkout(workout.id, workout.name)} disabled={deletingId === workout.id} aria-label={`בטל אימון ${workout.name}`} className="w-8 h-8 rounded flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 disabled:opacity-50">
+                    {deletingId === workout.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  </button>
                 </div>
               </Card>
             ))}

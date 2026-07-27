@@ -1,10 +1,10 @@
 import { useState } from "react";
 import {
-  Plus, Search, Check, X, CalendarDays, Dumbbell, Loader2,
+  Plus, Search, Check, X, CalendarDays, Dumbbell, Loader2, Edit3,
 } from "lucide-react";
 import { cn, Card, SectionLabel, Btn, Badge, Dialog, EmptyState } from "../components/ui";
 import { type BootstrapData, type Plan } from "../../lib/api";
-import { createPlan, PlansApiError, saveWeekPlan } from "../../features/plans/api";
+import { PlansApiError, savePlan, saveWeekPlan } from "../../features/plans/api";
 
 const PLAN_TEMPLATES: Record<string, { label: string; exercises: string[] }> = {
   push: { label: "Push", exercises: ["Bench Press", "Incline Bench Press", "Overhead Press", "Lateral Raise", "Tricep Pushdown", "Skull Crusher"] },
@@ -21,6 +21,7 @@ export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onS
   const [active, setActive] = useState<number | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [detailsPlan, setDetailsPlan] = useState<Plan | null>(null);
+  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [exerciseText, setExerciseText] = useState("");
@@ -44,7 +45,25 @@ export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onS
   };
 
   const openTemplate = (key: string) => {
+    setEditingPlan(null);
     loadTemplate(key);
+    setShowCreate(true);
+  };
+
+  const openCreatePlan = () => {
+    setEditingPlan(null);
+    setName("");
+    setDescription("");
+    setExerciseText("");
+    setShowCreate(true);
+  };
+
+  const openEditPlan = (plan: Plan) => {
+    setEditingPlan(plan);
+    setName(plan.name);
+    setDescription(plan.description ?? "");
+    setExerciseText(plan.exercises.map(exercise => exercise.exercise_name).join("\n"));
+    setDetailsPlan(null);
     setShowCreate(true);
   };
 
@@ -54,9 +73,10 @@ export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onS
     setSaving(true);
     setError(null);
     try {
-      await createPlan({ name: name.trim(), description: description.trim(), exercises });
+      await savePlan({ id: editingPlan?.id, name: name.trim(), description: description.trim(), exercises });
       await onSaved();
       setShowCreate(false);
+      setEditingPlan(null);
       setName("");
       setDescription("");
       setExerciseText("");
@@ -88,7 +108,7 @@ export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onS
     <div className="p-6 space-y-6 max-w-4xl">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">ספריית תוכניות</h1>
-        <Btn variant="primary" size="sm" onClick={() => setShowCreate(true)}>
+        <Btn variant="primary" size="sm" onClick={openCreatePlan}>
           <Plus className="w-3.5 h-3.5" />
           תוכנית חדשה
         </Btn>
@@ -214,7 +234,7 @@ export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onS
       {showCreate && (
         <Dialog labelId="create-plan-title" onClose={() => { if (!saving) setShowCreate(false); }} className="max-w-md p-5 space-y-4">
             <div className="flex items-center justify-between gap-3">
-              <h2 id="create-plan-title" className="text-lg font-semibold">תוכנית חדשה</h2>
+              <h2 id="create-plan-title" className="text-lg font-semibold">{editingPlan ? "עריכת תוכנית" : "תוכנית חדשה"}</h2>
               <button type="button" onClick={() => setShowCreate(false)} className="text-muted-foreground hover:text-foreground" aria-label="סגור">
                 <X className="w-5 h-5" />
               </button>
@@ -238,7 +258,7 @@ export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onS
             <div className="flex gap-2">
               <Btn variant="primary" className="flex-1" onClick={() => void saveNewPlan()} disabled={!name.trim() || saving}>
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                שמור תוכנית
+                {editingPlan ? "שמור שינויים" : "שמור תוכנית"}
               </Btn>
               <Btn variant="outline" onClick={() => setShowCreate(false)} disabled={saving}>ביטול</Btn>
             </div>
@@ -248,9 +268,14 @@ export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onS
         <Dialog labelId="plan-details-title" onClose={() => setDetailsPlan(null)} className="max-w-md p-5 space-y-4">
           <div className="flex items-center justify-between gap-3">
             <h2 id="plan-details-title" className="text-lg font-semibold">{detailsPlan.name}</h2>
-            <button type="button" onClick={() => setDetailsPlan(null)} className="text-muted-foreground hover:text-foreground" aria-label="סגור">
-              <X className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => openEditPlan(detailsPlan)} className="text-primary hover:text-primary/80" aria-label="ערוך תוכנית">
+                <Edit3 className="w-4 h-4" />
+              </button>
+              <button type="button" onClick={() => setDetailsPlan(null)} className="text-muted-foreground hover:text-foreground" aria-label="סגור">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
           <p className="text-sm text-muted-foreground">{detailsPlan.description || "ללא תיאור"}</p>
           <ul className="space-y-2 text-sm">

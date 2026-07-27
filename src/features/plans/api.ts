@@ -21,7 +21,12 @@ async function request(path: string, method: 'POST' | 'PUT', body: unknown): Pro
 }
 
 export async function createPlan(input: { name: string; description: string; exercises: string[] }): Promise<void> {
+  await savePlan(input);
+}
+
+export async function savePlan(input: { id?: number; name: string; description: string; exercises: string[] }): Promise<void> {
   await request('/api/plans', 'POST', {
+    id: input.id,
     name: input.name,
     description: input.description || null,
     exercises: input.exercises.map(name => ({ name, restSeconds: 90 })),

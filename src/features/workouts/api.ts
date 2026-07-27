@@ -39,3 +39,13 @@ export async function saveWorkout(workout: WorkoutSaveInput): Promise<void> {
     throw new WorkoutApiError(response.status, payload?.error ?? 'Unable to save workout.');
   }
 }
+
+export async function deleteWorkout(id: number): Promise<void> {
+  const response = await fetch('/api/workouts', {
+    method: 'DELETE',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id }),
+  });
+  if (!response.ok) throw new WorkoutApiError(response.status, 'Unable to delete workout.');
+}

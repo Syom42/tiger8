@@ -5,15 +5,20 @@ export class SupplementApiError extends Error {
 }
 
 export async function createSupplement(input: { name: string; dose: string; time: string }): Promise<void> {
+  await saveSupplement(input);
+}
+
+export async function saveSupplement(input: { id?: string; name: string; dose: string; time: string; enabled?: boolean }): Promise<void> {
   const response = await fetch('/api/supplements', {
     method: 'POST',
     credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
+      id: input.id,
       name: input.name,
       dose: input.dose || null,
       time: input.time || null,
-      enabled: true,
+      enabled: input.enabled ?? true,
     }),
   });
 
@@ -49,4 +54,14 @@ export async function setSupplementEnabled(
   if (!response.ok) {
     throw new SupplementApiError(response.status, 'Unable to update supplement.');
   }
+}
+
+export async function deleteSupplement(id: string): Promise<void> {
+  const response = await fetch('/api/supplements', {
+    method: 'DELETE',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id }),
+  });
+  if (!response.ok) throw new SupplementApiError(response.status, 'Unable to delete supplement.');
 }

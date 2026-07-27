@@ -1,13 +1,14 @@
 import { useState } from "react";
-import { Plus, Check, X, Pill, Loader2, CheckCircle } from "lucide-react";
+import { Plus, Check, X, Pill, Loader2, CheckCircle, Edit3, Trash2 } from "lucide-react";
 import { cn, Card, SectionLabel, Btn, Badge, Toggle, Dialog, EmptyState } from "../components/ui";
 import { type BootstrapData } from "../../lib/api";
-import { createSupplement, setSupplementEnabled, setSupplementTaken } from "../../features/supplements/api";
+import { deleteSupplement, saveSupplement, setSupplementEnabled, setSupplementTaken } from "../../features/supplements/api";
 
 export function SupplementsScreen({ data, onSaved }: { data: BootstrapData | null; onSaved: () => Promise<void> }) {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [editingSupplement, setEditingSupplement] = useState<BootstrapData["supplements"][number] | null>(null);
   const [name, setName] = useState("");
   const [dose, setDose] = useState("");
   const [timeHour, setTimeHour] = useState("08");
@@ -19,6 +20,25 @@ export function SupplementsScreen({ data, onSaved }: { data: BootstrapData | nul
 
   const clampHour = (v: string) => { const n = parseInt(v.replace(/\D/g, "").slice(0, 2)); return isNaN(n) ? "" : String(Math.min(n, 23)).padStart(v.length > 1 ? 2 : 1, "0"); };
   const clampMin = (v: string) => { const n = parseInt(v.replace(/\D/g, "").slice(0, 2)); return isNaN(n) ? "" : String(Math.min(n, 59)).padStart(v.length > 1 ? 2 : 1, "0"); };
+
+  const openCreateSupplement = () => {
+    setEditingSupplement(null);
+    setName("");
+    setDose("");
+    setTimeHour("08");
+    setTimeMin("00");
+    setShowCreate(true);
+  };
+
+  const openEditSupplement = (supplement: BootstrapData["supplements"][number]) => {
+    const [hour = "08", minute = "00"] = (supplement.time ?? "08:00").split(":");
+    setEditingSupplement(supplement);
+    setName(supplement.name);
+    setDose(supplement.dose ?? "");
+    setTimeHour(hour);
+    setTimeMin(minute);
+    setShowCreate(true);
+  };
 
   const update = async (id: string, operation: () => Promise<void>) => {
     if (savingId) return;
@@ -40,9 +60,16 @@ export function SupplementsScreen({ data, onSaved }: { data: BootstrapData | nul
     setError(null);
     try {
       const time = `${(timeHour || "08").padStart(2, "0")}:${(timeMin || "00").padStart(2, "0")}`;
-      await createSupplement({ name: name.trim(), dose: dose.trim(), time });
+      await saveSupplement({
+        id: editingSupplement?.id,
+        name: name.trim(),
+        dose: dose.trim(),
+        time,
+        enabled: editingSupplement?.enabled,
+      });
       await onSaved();
       setShowCreate(false);
+      setEditingSupplement(null);
       setName("");
       setDose("");
       setTimeHour("08");
@@ -58,7 +85,7 @@ export function SupplementsScreen({ data, onSaved }: { data: BootstrapData | nul
     <div className="p-6 space-y-5 max-w-3xl">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">תוספי תזונה</h1>
-        <Btn variant="primary" size="sm" onClick={() => setShowCreate(true)}>
+        <Btn variant="primary" size="sm" onClick={openCreateSupplement}>
           <Plus className="w-3.5 h-3.5" />
           הוסף תוסף
         </Btn>
@@ -112,6 +139,12 @@ export function SupplementsScreen({ data, onSaved }: { data: BootstrapData | nul
               <div className="flex items-center gap-2.5 flex-shrink-0">
                 <Badge variant={s.enabled ? "green" : "muted"}>{s.enabled ? "פעיל" : "כבוי"}</Badge>
                 <Toggle value={s.enabled} label={`הפעלת ${s.name}`} onChange={enabled => void update(s.id, () => setSupplementEnabled(s, enabled))} />
+                <button type="button" onClick={() => openEditSupplement(s)} aria-label={`ערוך ${s.name}`} className="w-8 h-8 rounded flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-accent">
+                  <Edit3 className="w-4 h-4" />
+                </button>
+                <button type="button" onClick={() => { if (window.confirm(`למחוק את ${s.name}?`)) void update(s.id, () => deleteSupplement(s.id)); }} aria-label={`מחק ${s.name}`} className="w-8 h-8 rounded flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             </Card>
           ))}
@@ -122,7 +155,7 @@ export function SupplementsScreen({ data, onSaved }: { data: BootstrapData | nul
       {showCreate && (
         <Dialog labelId="create-supplement-title" onClose={() => { if (savingId !== "new") setShowCreate(false); }} className="max-w-md p-5 space-y-4">
             <div className="flex items-center justify-between gap-3">
-              <h2 id="create-supplement-title" className="text-lg font-semibold">תוסף חדש</h2>
+              <h2 id="create-supplement-title" className="text-lg font-semibold">{editingSupplement ? "עריכת תוסף" : "תוסף חדש"}</h2>
               <button type="button" onClick={() => setShowCreate(false)} className="text-muted-foreground hover:text-foreground" aria-label="סגור">
                 <X className="w-5 h-5" />
               </button>
@@ -162,7 +195,7 @@ export function SupplementsScreen({ data, onSaved }: { data: BootstrapData | nul
             <div className="flex gap-2">
               <Btn variant="primary" className="flex-1" onClick={() => void addSupplement()} disabled={!name.trim() || savingId === "new"}>
                 {savingId === "new" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                הוסף תוסף
+                {editingSupplement ? "שמור שינויים" : "הוסף תוסף"}
               </Btn>
               <Btn variant="outline" onClick={() => setShowCreate(false)} disabled={savingId === "new"}>ביטול</Btn>
             </div>

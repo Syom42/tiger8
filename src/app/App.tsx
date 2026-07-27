@@ -152,8 +152,8 @@ export default function App() {
     switch (screen) {
       case "dashboard": return <DashboardScreen onStartWorkout={startWorkout} data={bootstrapData} loading={bootstrapLoading} canStartWorkout={Boolean(scheduledPlan()?.exercises.length)} />;
       case "plans": return <PlansScreen data={bootstrapData} onSaved={refreshBootstrapData} />;
-      case "history": return <HistoryScreen data={bootstrapData} />;
-      case "records": return <RecordsScreen data={bootstrapData} />;
+      case "history": return <HistoryScreen data={bootstrapData} onSaved={refreshBootstrapData} />;
+      case "records": return <RecordsScreen data={bootstrapData} onSaved={refreshBootstrapData} />;
       case "bodyweight": return <BodyWeightScreen data={bootstrapData} onSaved={refreshBootstrapData} />;
       case "supplements": return <SupplementsScreen data={bootstrapData} onSaved={refreshBootstrapData} />;
       case "profile": return <ProfileScreen isDark={isDark} setIsDark={setIsDark} offlineMode={offlineMode} data={bootstrapData} onSaved={refreshBootstrapData} />;
