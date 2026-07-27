@@ -116,7 +116,7 @@ app.post('/workouts', zValidator('json', WorkoutSchema), async (c) => {
       const ex = exArr[i];
       const [weRow] = await tx.insert(workoutExercises).values({
         workoutId: id, exerciseName: ex.name,
-        restSeconds: ex.restSeconds ?? 90, supersetGroup: ex.supersetGroup ?? null, sortOrder: i,
+        restSeconds: ex.restSeconds ?? 120, supersetGroup: ex.supersetGroup ?? null, sortOrder: i,
       }).returning({ id: workoutExercises.id });
 
       const setsArr = ex.sets ?? [];

@@ -43,7 +43,7 @@ export const workoutExercises = pgTable('workout_exercises', {
   id:           bigserial('id', { mode: 'number' }).primaryKey(),
   workoutId:    bigint('workout_id', { mode: 'number' }).notNull().references(() => workouts.id, { onDelete: 'cascade' }),
   exerciseName: text('exercise_name').notNull(),
-  restSeconds:  integer('rest_seconds').default(90),
+  restSeconds:  integer('rest_seconds').default(120),
   supersetGroup: text('superset_group'),
   sortOrder:    integer('sort_order').notNull().default(0),
 });
@@ -72,7 +72,7 @@ export const planExercises = pgTable('plan_exercises', {
   id:           bigserial('id', { mode: 'number' }).primaryKey(),
   planId:       bigint('plan_id', { mode: 'number' }).notNull().references(() => plans.id, { onDelete: 'cascade' }),
   exerciseName: text('exercise_name').notNull(),
-  restSeconds:  integer('rest_seconds').default(90),
+  restSeconds:  integer('rest_seconds').default(120),
   supersetGroup: text('superset_group'),
   sortOrder:    integer('sort_order').notNull().default(0),
 });

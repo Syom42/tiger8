@@ -25,6 +25,7 @@ export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onS
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [exerciseText, setExerciseText] = useState("");
+  const [defaultRestSeconds, setDefaultRestSeconds] = useState(120);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const plansById = new Map(data?.plans.map(plan => [plan.id, plan]) ?? []);
@@ -46,6 +47,7 @@ export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onS
 
   const openTemplate = (key: string) => {
     setEditingPlan(null);
+    setDefaultRestSeconds(120);
     loadTemplate(key);
     setShowCreate(true);
   };
@@ -55,6 +57,7 @@ export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onS
     setName("");
     setDescription("");
     setExerciseText("");
+    setDefaultRestSeconds(120);
     setShowCreate(true);
   };
 
@@ -62,6 +65,7 @@ export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onS
     setEditingPlan(plan);
     setName(plan.name);
     setDescription(plan.description ?? "");
+    setDefaultRestSeconds(plan.exercises[0]?.rest_seconds ?? 120);
     const renderedGroups = new Set<string>();
     setExerciseText(plan.exercises.flatMap(exercise => {
       const group = exercise.superset_group;
@@ -78,7 +82,7 @@ export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onS
     const exercises = exerciseText.split(/\r?\n/).flatMap((line, lineIndex) => {
       const names = line.split(/\s*\+\s*/).map(item => item.trim()).filter(Boolean);
       const supersetGroup = names.length > 1 ? `pair-${lineIndex + 1}` : null;
-      return names.map(name => ({ name, supersetGroup }));
+      return names.map(name => ({ name, supersetGroup, restSeconds: defaultRestSeconds }));
     });
     if (!name.trim() || saving) return;
     setSaving(true);
@@ -91,6 +95,7 @@ export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onS
       setName("");
       setDescription("");
       setExerciseText("");
+      setDefaultRestSeconds(120);
     } catch (requestError) {
       setError(requestError instanceof PlansApiError ? "לא ניתן היה לשמור את התוכנית. נסה שוב." : "אירעה שגיאה בשמירת התוכנית.");
     } finally {
@@ -264,6 +269,11 @@ export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onS
             <input id="plan-name" value={name} onChange={event => setName(event.target.value)} placeholder="שם התוכנית" className="w-full h-10 bg-input-background border border-border rounded px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             <label className="sr-only" htmlFor="plan-description">תיאור התוכנית</label>
             <input id="plan-description" value={description} onChange={event => setDescription(event.target.value)} placeholder="תיאור קצר (אופציונלי)" className="w-full h-10 bg-input-background border border-border rounded px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            <label className="block text-sm font-medium" htmlFor="plan-rest-time">
+              זמן מנוחה בין סטים (שניות)
+              <input id="plan-rest-time" dir="ltr" type="number" min="15" max="900" step="15" value={defaultRestSeconds} onChange={event => setDefaultRestSeconds(Math.min(900, Math.max(15, Number(event.target.value) || 120)))} className="mt-1 w-full h-10 bg-input-background border border-border rounded px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+            </label>
+            <p className="-mt-2 text-xs text-muted-foreground">ברירת המחדל היא 120 שניות (2:00). אפשר לשנות לכל תרגיל במהלך האימון.</p>
             <label className="sr-only" htmlFor="plan-exercises">תרגילי התוכנית</label>
             <textarea id="plan-exercises" value={exerciseText} onChange={event => setExerciseText(event.target.value)} placeholder={"תרגיל אחד בכל שורה\nלדוגמה: Bench Press\nלסופרסט: Bench Press + Barbell Row"} rows={5} className="w-full bg-input-background border border-border rounded p-3 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-ring" />
             <p className="text-xs text-muted-foreground">חבר שני תרגילים עם + באותה שורה כדי ליצור סופרסט.</p>
@@ -292,7 +302,7 @@ export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onS
           <p className="text-sm text-muted-foreground">{detailsPlan.description || "ללא תיאור"}</p>
           <ul className="space-y-2 text-sm">
             {detailsPlan.exercises.length
-              ? detailsPlan.exercises.map(exercise => <li key={exercise.exercise_name} className="flex items-center justify-between"><span>{exercise.exercise_name}</span><span className="text-xs text-muted-foreground">{exercise.superset_group ? "סופרסט" : `${exercise.rest_seconds ?? 90} שנ׳ מנוחה`}</span></li>)
+              ? detailsPlan.exercises.map(exercise => <li key={exercise.exercise_name} className="flex items-center justify-between"><span>{exercise.exercise_name}</span><span className="text-xs text-muted-foreground">{exercise.superset_group ? "סופרסט" : `${exercise.rest_seconds ?? 120} שנ׳ מנוחה`}</span></li>)
               : <li className="text-muted-foreground">אין תרגילים בתוכנית.</li>}
           </ul>
         </Dialog>

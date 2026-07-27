@@ -48,7 +48,7 @@ create table if not exists workout_exercises (
   id            bigserial primary key,
   workout_id    bigint not null references workouts(id) on delete cascade,
   exercise_name text not null,
-  rest_seconds  int default 90,
+  rest_seconds  int default 120,
   superset_group text,
   sort_order    int not null default 0
 );
@@ -80,7 +80,7 @@ create table if not exists plan_exercises (
   id            bigserial primary key,
   plan_id       bigint not null references plans(id) on delete cascade,
   exercise_name text not null,
-  rest_seconds  int default 90,
+  rest_seconds  int default 120,
   superset_group text,
   sort_order    int not null default 0
 );

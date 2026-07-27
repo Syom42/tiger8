@@ -40,7 +40,7 @@ export function WorkoutScreen({
     return {
       id: index + 1,
       name: exercise.exercise_name,
-      restSeconds: exercise.rest_seconds ?? 90,
+      restSeconds: exercise.rest_seconds ?? 120,
       supersetGroup: exercise.superset_group ?? null,
       pr,
       lastSession: previousWeight > 0 ? `${previousWeight} ק״ג × ${previousReps || 8}` : "אין נתון קודם",
@@ -105,6 +105,13 @@ export function WorkoutScreen({
     setExercises(prev => prev.map((ex, i) => i !== ei ? ex : {
       ...ex,
       sets: ex.sets.map((s, j) => j !== si ? s : { ...s, [field]: Math.max(0, val) }),
+    }));
+  };
+
+  const updateRestSeconds = (ei: number, change: number) => {
+    setExercises(prev => prev.map((exercise, exerciseIndex) => exerciseIndex !== ei ? exercise : {
+      ...exercise,
+      restSeconds: Math.min(900, Math.max(15, exercise.restSeconds + change)),
     }));
   };
 
@@ -234,6 +241,12 @@ export function WorkoutScreen({
             <div className="flex items-center justify-between gap-2 mb-3 text-xs">
               <span className="text-primary font-medium">{ex.progressionHint}</span>
               {supersetPartners.length > 1 && <Badge variant="muted"><Link2 className="w-3 h-3" />סופרסט: {supersetPartners.join(" + ")}</Badge>}
+            </div>
+            <div className="flex items-center gap-2 mb-3 text-xs text-muted-foreground">
+              <Timer className="w-3.5 h-3.5" />
+              <span>מנוחה {fmt(ex.restSeconds)}</span>
+              <button type="button" onClick={() => updateRestSeconds(ei, -30)} disabled={ex.restSeconds <= 15} aria-label={`הפחת 30 שניות מנוחה עבור ${ex.name}`} className="w-6 h-6 rounded border border-border text-sm hover:border-primary disabled:opacity-40">−</button>
+              <button type="button" onClick={() => updateRestSeconds(ei, 30)} disabled={ex.restSeconds >= 900} aria-label={`הוסף 30 שניות מנוחה עבור ${ex.name}`} className="w-6 h-6 rounded border border-border text-sm hover:border-primary disabled:opacity-40">+</button>
             </div>
             <button type="button" onClick={() => addWarmupSets(ei)} className="mb-3 flex items-center gap-1 text-xs font-medium text-[var(--gold)] hover:opacity-80">
               <Flame className="w-3.5 h-3.5" />

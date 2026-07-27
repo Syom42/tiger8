@@ -45,8 +45,8 @@ await expectStatus('/api/plans', 200, {
     name: 'QA plan',
     description: 'Development smoke test plan',
     exercises: [
-      { name: 'Bench Press', restSeconds: 90, supersetGroup: 'QA_PAIR' },
-      { name: 'Barbell Row', restSeconds: 90, supersetGroup: 'QA_PAIR' },
+      { name: 'Bench Press', supersetGroup: 'QA_PAIR' },
+      { name: 'Barbell Row', supersetGroup: 'QA_PAIR' },
     ],
   }),
 });
@@ -65,6 +65,7 @@ const planBootstrap = await expectStatus('/api/init', 200, { headers: authHeader
 const planBootstrapData = await planBootstrap.json();
 assert.equal(planBootstrapData.weekPlan?.[todayKey], planId, 'saved plan was not assigned to today');
 assert.equal(planBootstrapData.plans?.find(plan => plan.id === planId)?.exercises?.[0]?.exercise_name, 'Bench Press', 'saved plan exercises did not return through bootstrap data');
+assert.equal(planBootstrapData.plans?.find(plan => plan.id === planId)?.exercises?.[0]?.rest_seconds, 120, 'new plan exercises did not default to two minutes of rest');
 assert.equal(planBootstrapData.plans?.find(plan => plan.id === planId)?.exercises?.[0]?.superset_group, 'QA_PAIR', 'saved plan superset group did not return through bootstrap data');
 assert.equal(planBootstrapData.plans?.find(plan => plan.id === planId)?.exercises?.[1]?.superset_group, 'QA_PAIR', 'paired plan exercise did not retain its superset group');
 

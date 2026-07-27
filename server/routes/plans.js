@@ -66,7 +66,7 @@ app.post('/plans', zValidator('json', PlanSchema), async (c) => {
       const ex = exArr[i];
       const exName = typeof ex === 'string' ? ex : (ex.name || ex.exercise_name);
       if (!exName) continue;
-      const rest = typeof ex === 'string' ? 90 : (ex.restSeconds || ex.rest_seconds || 90);
+      const rest = typeof ex === 'string' ? 120 : (ex.restSeconds || ex.rest_seconds || 120);
       const supersetGroup = typeof ex === 'string' ? null : (ex.supersetGroup || ex.superset_group || null);
       toInsert.push({ planId: id, exerciseName: exName, restSeconds: rest, supersetGroup, sortOrder: i });
     }

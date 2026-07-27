@@ -107,7 +107,7 @@ export function DashboardScreen({
                   <span className="text-sm font-medium">{ex.exercise_name}</span>
                 </div>
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                  <span className="font-mono">מנוחה {ex.rest_seconds ?? 90} שנ׳</span>
+                  <span className="font-mono">מנוחה {ex.rest_seconds ?? 120} שנ׳</span>
                 </div>
               </div>
             ))}
