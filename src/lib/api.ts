@@ -2,6 +2,9 @@ export type WorkoutSet = {
   weight: string | number | null;
   reps: string | number | null;
   done: boolean;
+  rpe?: number | null;
+  rir?: number | null;
+  is_warmup?: boolean;
 };
 
 export type Workout = {
@@ -11,6 +14,8 @@ export type Workout = {
   duration: number | null;
   exercises: Array<{
     exercise_name: string;
+    rest_seconds?: number | null;
+    superset_group?: string | null;
     sets: WorkoutSet[];
   }>;
 };
@@ -22,6 +27,7 @@ export type Plan = {
   exercises: Array<{
     exercise_name: string;
     rest_seconds: number | null;
+    superset_group?: string | null;
   }>;
 };
 

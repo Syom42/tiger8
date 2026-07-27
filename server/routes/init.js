@@ -119,7 +119,8 @@ app.get('/init', requireAuth, async (c) => {
     for (const s of setRows) {
       if (!setsByEx.has(s.workoutExerciseId)) setsByEx.set(s.workoutExerciseId, []);
       setsByEx.get(s.workoutExerciseId).push({
-        id: s.id, weight: s.weight, reps: s.reps, done: s.done, sort_order: s.sortOrder,
+        id: s.id, weight: s.weight, reps: s.reps, done: s.done, rpe: s.rpe, rir: s.rir,
+        is_warmup: s.isWarmup, sort_order: s.sortOrder,
       });
     }
 
@@ -128,7 +129,7 @@ app.get('/init', requireAuth, async (c) => {
       if (!exByWorkout.has(e.workoutId)) exByWorkout.set(e.workoutId, []);
       exByWorkout.get(e.workoutId).push({
         id: e.id, exercise_name: e.exerciseName,
-        rest_seconds: e.restSeconds, sort_order: e.sortOrder,
+        rest_seconds: e.restSeconds, superset_group: e.supersetGroup, sort_order: e.sortOrder,
         sets: setsByEx.get(e.id) ?? [],
       });
     }
@@ -153,7 +154,7 @@ app.get('/init', requireAuth, async (c) => {
       if (!byPlan.has(e.planId)) byPlan.set(e.planId, []);
       byPlan.get(e.planId).push({
         id: e.id, exercise_name: e.exerciseName,
-        rest_seconds: e.restSeconds, sort_order: e.sortOrder,
+        rest_seconds: e.restSeconds, superset_group: e.supersetGroup, sort_order: e.sortOrder,
       });
     }
     plansWithExercises = planRows.map(p => ({

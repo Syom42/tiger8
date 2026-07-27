@@ -28,7 +28,7 @@ app.get('/plans', async (c) => {
     if (!byPlan.has(e.planId)) byPlan.set(e.planId, []);
     byPlan.get(e.planId).push({
       id: e.id, exercise_name: e.exerciseName,
-      rest_seconds: e.restSeconds, sort_order: e.sortOrder,
+      rest_seconds: e.restSeconds, superset_group: e.supersetGroup, sort_order: e.sortOrder,
     });
   }
 
@@ -67,7 +67,8 @@ app.post('/plans', zValidator('json', PlanSchema), async (c) => {
       const exName = typeof ex === 'string' ? ex : (ex.name || ex.exercise_name);
       if (!exName) continue;
       const rest = typeof ex === 'string' ? 90 : (ex.restSeconds || ex.rest_seconds || 90);
-      toInsert.push({ planId: id, exerciseName: exName, restSeconds: rest, sortOrder: i });
+      const supersetGroup = typeof ex === 'string' ? null : (ex.supersetGroup || ex.superset_group || null);
+      toInsert.push({ planId: id, exerciseName: exName, restSeconds: rest, supersetGroup, sortOrder: i });
     }
     if (toInsert.length) await tx.insert(planExercises).values(toInsert);
   });

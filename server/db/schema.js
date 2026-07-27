@@ -44,6 +44,7 @@ export const workoutExercises = pgTable('workout_exercises', {
   workoutId:    bigint('workout_id', { mode: 'number' }).notNull().references(() => workouts.id, { onDelete: 'cascade' }),
   exerciseName: text('exercise_name').notNull(),
   restSeconds:  integer('rest_seconds').default(90),
+  supersetGroup: text('superset_group'),
   sortOrder:    integer('sort_order').notNull().default(0),
 });
 
@@ -53,6 +54,9 @@ export const workoutSets = pgTable('workout_sets', {
   weight:            text('weight'),
   reps:              text('reps'),
   done:              boolean('done').notNull().default(false),
+  rpe:               integer('rpe'),
+  rir:               integer('rir'),
+  isWarmup:          boolean('is_warmup').notNull().default(false),
   sortOrder:         integer('sort_order').notNull().default(0),
 });
 
@@ -69,6 +73,7 @@ export const planExercises = pgTable('plan_exercises', {
   planId:       bigint('plan_id', { mode: 'number' }).notNull().references(() => plans.id, { onDelete: 'cascade' }),
   exerciseName: text('exercise_name').notNull(),
   restSeconds:  integer('rest_seconds').default(90),
+  supersetGroup: text('superset_group'),
   sortOrder:    integer('sort_order').notNull().default(0),
 });
 

@@ -5,7 +5,8 @@ export type WorkoutSaveInput = {
   exercises: Array<{
     name: string;
     restSeconds: number;
-    sets: Array<{ weight: number; reps: number; done: boolean }>;
+    supersetGroup: string | null;
+    sets: Array<{ weight: number; reps: number; done: boolean; rpe: number | null; rir: number | null; isWarmup: boolean }>;
   }>;
 };
 
@@ -29,6 +30,9 @@ export async function saveWorkout(workout: WorkoutSaveInput): Promise<void> {
           weight: String(set.weight),
           reps: String(set.reps),
           done: set.done,
+          rpe: set.rpe,
+          rir: set.rir,
+          isWarmup: set.isWarmup,
         })),
       })),
     }),

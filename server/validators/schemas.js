@@ -53,11 +53,15 @@ const SetSchema = z.object({
   weight: optStr,
   reps:   optStr,
   done:   z.boolean().optional(),
+  rpe:    z.number().int().min(1).max(10).nullable().optional(),
+  rir:    z.number().int().min(0).max(10).nullable().optional(),
+  isWarmup: z.boolean().optional(),
 });
 
 const WorkoutExerciseSchema = z.object({
   name:         nonEmpty,
   restSeconds:  z.number().int().optional(),
+  supersetGroup: z.string().trim().max(80).nullable().optional(),
   sets:         z.array(SetSchema).optional(),
 });
 
@@ -81,6 +85,8 @@ const PlanExerciseInput = z.union([
     exercise_name: z.string().optional(),
     restSeconds:   z.number().int().optional(),
     rest_seconds:  z.number().int().optional(),
+    supersetGroup: z.string().trim().max(80).nullable().optional(),
+    superset_group: z.string().trim().max(80).nullable().optional(),
   }),
 ]);
 

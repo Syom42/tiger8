@@ -71,7 +71,8 @@ app.get('/workouts', async (c) => {
   for (const s of setRows) {
     if (!setsByEx.has(s.workoutExerciseId)) setsByEx.set(s.workoutExerciseId, []);
     setsByEx.get(s.workoutExerciseId).push({
-      id: s.id, weight: s.weight, reps: s.reps, done: s.done, sort_order: s.sortOrder,
+      id: s.id, weight: s.weight, reps: s.reps, done: s.done, rpe: s.rpe, rir: s.rir,
+      is_warmup: s.isWarmup, sort_order: s.sortOrder,
     });
   }
 
@@ -80,7 +81,7 @@ app.get('/workouts', async (c) => {
     if (!exByWorkout.has(e.workoutId)) exByWorkout.set(e.workoutId, []);
     exByWorkout.get(e.workoutId).push({
       id: e.id, exercise_name: e.exerciseName,
-      rest_seconds: e.restSeconds, sort_order: e.sortOrder,
+      rest_seconds: e.restSeconds, superset_group: e.supersetGroup, sort_order: e.sortOrder,
       sets: setsByEx.get(e.id) ?? [],
     });
   }
@@ -115,7 +116,7 @@ app.post('/workouts', zValidator('json', WorkoutSchema), async (c) => {
       const ex = exArr[i];
       const [weRow] = await tx.insert(workoutExercises).values({
         workoutId: id, exerciseName: ex.name,
-        restSeconds: ex.restSeconds ?? 90, sortOrder: i,
+        restSeconds: ex.restSeconds ?? 90, supersetGroup: ex.supersetGroup ?? null, sortOrder: i,
       }).returning({ id: workoutExercises.id });
 
       const setsArr = ex.sets ?? [];
@@ -125,12 +126,15 @@ app.post('/workouts', zValidator('json', WorkoutSchema), async (c) => {
           weight: s.weight ?? null,
           reps:   s.reps ?? null,
           done:   s.done ?? false,
+          rpe:    s.rpe ?? null,
+          rir:    s.rir ?? null,
+          isWarmup: s.isWarmup ?? false,
           sortOrder: j,
         })));
       }
 
       const bestSet = setsArr
-        .filter(set => set.done)
+        .filter(set => set.done && !set.isWarmup)
         .map(set => ({ weight: Number(set.weight), reps: Number(set.reps) || 0 }))
         .filter(set => Number.isFinite(set.weight) && set.weight > 0)
         .sort((first, second) => second.weight - first.weight || second.reps - first.reps)[0];

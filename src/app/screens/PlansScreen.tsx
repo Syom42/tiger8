@@ -62,13 +62,24 @@ export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onS
     setEditingPlan(plan);
     setName(plan.name);
     setDescription(plan.description ?? "");
-    setExerciseText(plan.exercises.map(exercise => exercise.exercise_name).join("\n"));
+    const renderedGroups = new Set<string>();
+    setExerciseText(plan.exercises.flatMap(exercise => {
+      const group = exercise.superset_group;
+      if (!group) return [exercise.exercise_name];
+      if (renderedGroups.has(group)) return [];
+      renderedGroups.add(group);
+      return [plan.exercises.filter(item => item.superset_group === group).map(item => item.exercise_name).join(" + ")];
+    }).join("\n"));
     setDetailsPlan(null);
     setShowCreate(true);
   };
 
   const saveNewPlan = async () => {
-    const exercises = exerciseText.split(/\r?\n|,/).map(item => item.trim()).filter(Boolean);
+    const exercises = exerciseText.split(/\r?\n/).flatMap((line, lineIndex) => {
+      const names = line.split(/\s*\+\s*/).map(item => item.trim()).filter(Boolean);
+      const supersetGroup = names.length > 1 ? `pair-${lineIndex + 1}` : null;
+      return names.map(name => ({ name, supersetGroup }));
+    });
     if (!name.trim() || saving) return;
     setSaving(true);
     setError(null);
@@ -254,7 +265,8 @@ export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onS
             <label className="sr-only" htmlFor="plan-description">תיאור התוכנית</label>
             <input id="plan-description" value={description} onChange={event => setDescription(event.target.value)} placeholder="תיאור קצר (אופציונלי)" className="w-full h-10 bg-input-background border border-border rounded px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             <label className="sr-only" htmlFor="plan-exercises">תרגילי התוכנית</label>
-            <textarea id="plan-exercises" value={exerciseText} onChange={event => setExerciseText(event.target.value)} placeholder={"תרגיל אחד בכל שורה\nלדוגמה: Bench Press"} rows={5} className="w-full bg-input-background border border-border rounded p-3 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-ring" />
+            <textarea id="plan-exercises" value={exerciseText} onChange={event => setExerciseText(event.target.value)} placeholder={"תרגיל אחד בכל שורה\nלדוגמה: Bench Press\nלסופרסט: Bench Press + Barbell Row"} rows={5} className="w-full bg-input-background border border-border rounded p-3 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-ring" />
+            <p className="text-xs text-muted-foreground">חבר שני תרגילים עם + באותה שורה כדי ליצור סופרסט.</p>
             <div className="flex gap-2">
               <Btn variant="primary" className="flex-1" onClick={() => void saveNewPlan()} disabled={!name.trim() || saving}>
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
@@ -280,7 +292,7 @@ export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onS
           <p className="text-sm text-muted-foreground">{detailsPlan.description || "ללא תיאור"}</p>
           <ul className="space-y-2 text-sm">
             {detailsPlan.exercises.length
-              ? detailsPlan.exercises.map(exercise => <li key={exercise.exercise_name} className="flex items-center justify-between"><span>{exercise.exercise_name}</span><span className="text-xs text-muted-foreground">{exercise.rest_seconds ?? 90} שנ׳ מנוחה</span></li>)
+              ? detailsPlan.exercises.map(exercise => <li key={exercise.exercise_name} className="flex items-center justify-between"><span>{exercise.exercise_name}</span><span className="text-xs text-muted-foreground">{exercise.superset_group ? "סופרסט" : `${exercise.rest_seconds ?? 90} שנ׳ מנוחה`}</span></li>)
               : <li className="text-muted-foreground">אין תרגילים בתוכנית.</li>}
           </ul>
         </Dialog>

@@ -6,6 +6,8 @@ export class PlansApiError extends Error {
   }
 }
 
+export type PlanExerciseInput = { name: string; supersetGroup: string | null };
+
 async function request(path: string, method: 'POST' | 'PUT', body: unknown): Promise<void> {
   const response = await fetch(path, {
     method,
@@ -20,16 +22,16 @@ async function request(path: string, method: 'POST' | 'PUT', body: unknown): Pro
   }
 }
 
-export async function createPlan(input: { name: string; description: string; exercises: string[] }): Promise<void> {
+export async function createPlan(input: { name: string; description: string; exercises: PlanExerciseInput[] }): Promise<void> {
   await savePlan(input);
 }
 
-export async function savePlan(input: { id?: number; name: string; description: string; exercises: string[] }): Promise<void> {
+export async function savePlan(input: { id?: number; name: string; description: string; exercises: PlanExerciseInput[] }): Promise<void> {
   await request('/api/plans', 'POST', {
     id: input.id,
     name: input.name,
     description: input.description || null,
-    exercises: input.exercises.map(name => ({ name, restSeconds: 90 })),
+    exercises: input.exercises.map(exercise => ({ ...exercise, restSeconds: 90 })),
   });
 }
 
