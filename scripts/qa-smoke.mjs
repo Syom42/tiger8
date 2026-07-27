@@ -44,7 +44,10 @@ await expectStatus('/api/plans', 200, {
   body: JSON.stringify({
     name: 'QA plan',
     description: 'Development smoke test plan',
-    exercises: [{ name: 'Bench Press', restSeconds: 90 }],
+    exercises: [
+      { name: 'Bench Press', restSeconds: 90, supersetGroup: 'QA_PAIR' },
+      { name: 'Barbell Row', restSeconds: 90, supersetGroup: 'QA_PAIR' },
+    ],
   }),
 });
 const createdPlans = await expectStatus('/api/plans', 200, { headers: authHeaders });
@@ -62,6 +65,8 @@ const planBootstrap = await expectStatus('/api/init', 200, { headers: authHeader
 const planBootstrapData = await planBootstrap.json();
 assert.equal(planBootstrapData.weekPlan?.[todayKey], planId, 'saved plan was not assigned to today');
 assert.equal(planBootstrapData.plans?.find(plan => plan.id === planId)?.exercises?.[0]?.exercise_name, 'Bench Press', 'saved plan exercises did not return through bootstrap data');
+assert.equal(planBootstrapData.plans?.find(plan => plan.id === planId)?.exercises?.[0]?.superset_group, 'QA_PAIR', 'saved plan superset group did not return through bootstrap data');
+assert.equal(planBootstrapData.plans?.find(plan => plan.id === planId)?.exercises?.[1]?.superset_group, 'QA_PAIR', 'paired plan exercise did not retain its superset group');
 
 await expectStatus('/api/workouts', 200, {
   method: 'POST',
@@ -71,11 +76,23 @@ await expectStatus('/api/workouts', 200, {
     muscles: ['chest'],
     date: new Date().toISOString(),
     duration: 1800,
-    exercises: [{
-      name: 'Bench Press',
-      restSeconds: 90,
-      sets: [{ weight: '100', reps: '5', done: true }],
-    }],
+    exercises: [
+      {
+        name: 'Bench Press',
+        restSeconds: 90,
+        supersetGroup: 'QA_PAIR',
+        sets: [
+          { weight: '40', reps: '8', done: true, isWarmup: true },
+          { weight: '100', reps: '5', done: true, rpe: 8, rir: 2 },
+        ],
+      },
+      {
+        name: 'Barbell Row',
+        restSeconds: 90,
+        supersetGroup: 'QA_PAIR',
+        sets: [{ weight: '70', reps: '8', done: true, rpe: 9, rir: 1 }],
+      },
+    ],
   }),
 });
 
@@ -84,7 +101,36 @@ const bootstrapData = await bootstrap.json();
 const savedWorkout = bootstrapData.workouts?.find(workout => workout.name === 'QA workout');
 assert.ok(savedWorkout?.id, 'server did not assign an ID to the saved workout');
 assert.equal(savedWorkout?.exercises?.[0]?.sets?.[0]?.done, true, 'saved workout did not return with its completed set');
+assert.equal(savedWorkout?.exercises?.[0]?.superset_group, 'QA_PAIR', 'completed workout did not retain its superset group');
+assert.equal(savedWorkout?.exercises?.[1]?.superset_group, 'QA_PAIR', 'paired completed exercise did not retain its superset group');
+assert.equal(savedWorkout?.exercises?.[0]?.sets?.[0]?.is_warmup, true, 'warm-up set did not retain its marker');
+assert.equal(savedWorkout?.exercises?.[0]?.sets?.[1]?.rpe, 8, 'working-set RPE did not return through bootstrap data');
+assert.equal(savedWorkout?.exercises?.[0]?.sets?.[1]?.rir, 2, 'working-set RIR did not return through bootstrap data');
+assert.equal(savedWorkout?.exercises?.[1]?.sets?.[0]?.rpe, 9, 'paired exercise RPE did not return through bootstrap data');
 assert.equal(Number(bootstrapData.prs?.['Bench Press']?.weight), 100, 'completed workout did not automatically create its personal record');
+assert.equal(Number(bootstrapData.prs?.['Bench Press']?.weight) !== 40, true, 'warm-up set was incorrectly used as a personal record');
+
+await expectStatus('/api/workouts', 200, {
+  method: 'POST',
+  headers: { ...authHeaders, 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    name: 'QA workout - previous values',
+    muscles: ['chest'],
+    date: new Date().toISOString(),
+    duration: 60,
+    exercises: [{
+      name: 'Bench Press',
+      restSeconds: 90,
+      sets: [{ weight: '102.5', reps: '5', done: true, rpe: 8, rir: 2 }],
+    }],
+  }),
+});
+
+const progressionBootstrap = await expectStatus('/api/init', 200, { headers: authHeaders });
+const progressionBootstrapData = await progressionBootstrap.json();
+const priorWorkout = progressionBootstrapData.workouts?.find(workout => workout.name === 'QA workout');
+assert.equal(priorWorkout?.exercises?.[0]?.sets?.[1]?.weight, '100', 'completed working-set values are not available for the next-session prompt');
+assert.equal(priorWorkout?.exercises?.[0]?.sets?.[1]?.rpe, 8, 'previous-session effort is not available for progressive-overload prompts');
 
 await expectStatus('/api/weight', 200, {
   method: 'POST',
