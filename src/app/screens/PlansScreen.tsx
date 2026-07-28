@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  Plus, Search, Check, X, CalendarDays, Dumbbell, Loader2, Edit3,
+  Plus, Search, Check, X, CalendarDays, Dumbbell, Loader2, Edit3, Trash2, AlertTriangle, Undo2,
 } from "lucide-react";
 import { cn, Card, SectionLabel, Btn, Badge, Dialog, EmptyState } from "../components/ui";
 import { type BootstrapData, type Plan } from "../../lib/api";
-import { PlansApiError, savePlan, saveWeekPlan } from "../../features/plans/api";
+import { PlansApiError, deletePlan, savePlan, saveWeekPlan } from "../../features/plans/api";
+import { type WorkoutDraft } from "../lib/types";
+import { readStoredValue, clearStoredValue, WORKOUT_DRAFT_KEY } from "../lib/storage";
 
 const PLAN_TEMPLATES: Record<string, { label: string; exercises: string[] }> = {
   push: { label: "Push", exercises: ["Bench Press", "Incline Bench Press", "Overhead Press", "Lateral Raise", "Tricep Pushdown", "Skull Crusher"] },
@@ -22,6 +24,9 @@ export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onS
   const [showCreate, setShowCreate] = useState(false);
   const [detailsPlan, setDetailsPlan] = useState<Plan | null>(null);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
+  const [planToDelete, setPlanToDelete] = useState<Plan | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [recentlyDeleted, setRecentlyDeleted] = useState<{ plan: Plan; days: string[] } | null>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [exerciseText, setExerciseText] = useState("");
@@ -44,6 +49,12 @@ export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onS
     setName(tpl.label);
     setExerciseText(tpl.exercises.join("\n"));
   };
+
+  useEffect(() => {
+    if (!recentlyDeleted) return;
+    const timer = setTimeout(() => setRecentlyDeleted(null), 12000);
+    return () => clearTimeout(timer);
+  }, [recentlyDeleted]);
 
   const openTemplate = (key: string) => {
     setEditingPlan(null);
@@ -98,6 +109,59 @@ export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onS
       setDefaultRestSeconds(120);
     } catch (requestError) {
       setError(requestError instanceof PlansApiError ? "לא ניתן היה לשמור את התוכנית. נסה שוב." : "אירעה שגיאה בשמירת התוכנית.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const confirmDeletePlan = async () => {
+    if (!planToDelete || saving) return;
+    const removed = planToDelete;
+    const scheduledKeys = Object.entries(data?.weekPlan ?? {})
+      .filter(([, dayPlanId]) => dayPlanId === removed.id)
+      .map(([day]) => day);
+    setSaving(true);
+    setDeleteError(null);
+    try {
+      await deletePlan(removed.id);
+      // An active draft for a deleted plan can never be finished — drop it.
+      if (readStoredValue<WorkoutDraft>(WORKOUT_DRAFT_KEY)?.planId === removed.id) {
+        clearStoredValue(WORKOUT_DRAFT_KEY);
+      }
+      await onSaved();
+      if (active === removed.id) setActive(null);
+      setPlanToDelete(null);
+      setRecentlyDeleted({ plan: removed, days: scheduledKeys });
+    } catch (requestError) {
+      setDeleteError(requestError instanceof PlansApiError ? "לא ניתן היה למחוק את התוכנית. נסה שוב." : "אירעה שגיאה במחיקת התוכנית.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const undoDeletePlan = async () => {
+    if (!recentlyDeleted || saving) return;
+    const { plan, days } = recentlyDeleted;
+    setSaving(true);
+    setError(null);
+    try {
+      await savePlan({
+        id: plan.id,
+        name: plan.name,
+        description: plan.description ?? "",
+        exercises: plan.exercises.map(exercise => ({
+          name: exercise.exercise_name,
+          supersetGroup: exercise.superset_group ?? null,
+          restSeconds: exercise.rest_seconds ?? 120,
+        })),
+      });
+      if (days.length) {
+        await saveWeekPlan({ ...(data?.weekPlan ?? {}), ...Object.fromEntries(days.map(day => [day, plan.id])) });
+      }
+      await onSaved();
+      setRecentlyDeleted(null);
+    } catch {
+      setError("לא ניתן היה לשחזר את התוכנית.");
     } finally {
       setSaving(false);
     }
@@ -305,7 +369,51 @@ export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onS
               ? detailsPlan.exercises.map(exercise => <li key={exercise.exercise_name} className="flex items-center justify-between"><span>{exercise.exercise_name}</span><span className="text-xs text-muted-foreground">{exercise.superset_group ? "סופרסט" : `${exercise.rest_seconds ?? 120} שנ׳ מנוחה`}</span></li>)
               : <li className="text-muted-foreground">אין תרגילים בתוכנית.</li>}
           </ul>
+          <div className="pt-3 border-t border-border">
+            <Btn variant="outline" size="sm" onClick={() => { setPlanToDelete(detailsPlan); setDeleteError(null); setDetailsPlan(null); }} className="text-destructive hover:bg-destructive/10">
+              <Trash2 className="w-3.5 h-3.5" />
+              מחק תוכנית
+            </Btn>
+          </div>
         </Dialog>
+      )}
+      {planToDelete && (
+        <Dialog labelId="delete-plan-title" onClose={() => { if (!saving) setPlanToDelete(null); }} className="max-w-sm p-6">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-9 h-9 rounded-full bg-destructive/15 flex items-center justify-center flex-shrink-0">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+            </div>
+            <h2 id="delete-plan-title" className="font-semibold text-lg">למחוק את התוכנית?</h2>
+          </div>
+          <p className="text-sm text-muted-foreground mb-2">
+            התוכנית <span className="font-semibold text-foreground">{planToDelete.name}</span> תימחק לצמיתות. לא ניתן לבטל את הפעולה.
+          </p>
+          <p className="text-sm text-muted-foreground mb-5">
+            {scheduledDays(planToDelete.id) > 0
+              ? `התוכנית משובצת ב-${scheduledDays(planToDelete.id)} ימים בלוח השבועי, והם יתפנו.`
+              : "היסטוריית האימונים שכבר הושלמו תישמר."}
+          </p>
+          {deleteError && <p className="text-sm text-destructive mb-3" role="alert">{deleteError}</p>}
+          <div className="flex gap-2">
+            <Btn variant="destructive" className="flex-1" onClick={() => void confirmDeletePlan()} disabled={saving}>
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+              מחק תוכנית
+            </Btn>
+            <Btn variant="outline" className="flex-1" onClick={() => setPlanToDelete(null)} disabled={saving}>ביטול</Btn>
+          </div>
+        </Dialog>
+      )}
+      {recentlyDeleted && (
+        <div role="status" className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-card border border-border shadow-xl rounded-lg px-4 py-3 max-w-[calc(100vw-2rem)]">
+          <span className="text-sm">התוכנית נמחקה</span>
+          <Btn variant="outline" size="xs" onClick={() => void undoDeletePlan()} disabled={saving}>
+            {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Undo2 className="w-3 h-3" />}
+            בטל
+          </Btn>
+          <button type="button" onClick={() => setRecentlyDeleted(null)} className="text-muted-foreground hover:text-foreground" aria-label="סגור הודעה">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       )}
     </div>
   );

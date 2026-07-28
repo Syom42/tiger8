@@ -16,6 +16,7 @@ async function expectStatus(path, expectedStatus, options = {}) {
 
 await expectStatus('/', 200);
 await expectStatus('/login.html', 200);
+await expectStatus('/login.js', 200);
 await expectStatus('/api/init', 401);
 
 const signup = await expectStatus('/api/auth/signup', 200, {
@@ -192,6 +193,33 @@ await expectStatus('/api/supplements', 404, {
   headers: { Cookie: secondCookie, 'Content-Type': 'application/json' },
   body: JSON.stringify({ id: supplementId, name: 'attempted overwrite', enabled: false }),
 });
+
+// Plan deletion: another user must not be able to delete someone else's plan.
+await expectStatus('/api/plans', 404, {
+  method: 'DELETE',
+  headers: { Cookie: secondCookie, 'Content-Type': 'application/json' },
+  body: JSON.stringify({ id: planId }),
+});
+const crossUserPlans = await expectStatus('/api/plans', 200, { headers: authHeaders });
+assert.ok((await crossUserPlans.json()).some(plan => plan.id === planId), 'another user was able to delete a plan they do not own');
+
+// CSRF defence in depth: a cross-site Origin must be rejected outright.
+await expectStatus('/api/plans', 403, {
+  method: 'DELETE',
+  headers: { ...authHeaders, 'Content-Type': 'application/json', Origin: 'https://attacker.example' },
+  body: JSON.stringify({ id: planId }),
+});
+
+await expectStatus('/api/plans', 200, {
+  method: 'DELETE',
+  headers: { ...authHeaders, 'Content-Type': 'application/json' },
+  body: JSON.stringify({ id: planId }),
+});
+const deletedPlanBootstrap = await expectStatus('/api/init', 200, { headers: authHeaders });
+const deletedPlanBootstrapData = await deletedPlanBootstrap.json();
+assert.equal(deletedPlanBootstrapData.plans?.some(plan => plan.id === planId), false, 'deleted plan still returns through bootstrap data');
+assert.equal(deletedPlanBootstrapData.weekPlan?.[todayKey] ?? null, null, 'deleted plan was not cleared from the weekly schedule');
+assert.ok(deletedPlanBootstrapData.workouts?.some(workout => workout.name === 'QA workout'), 'deleting a plan incorrectly removed completed workout history');
 
 const coach = await expectStatus('/api/coach', 200, {
   method: 'POST',

@@ -8,7 +8,7 @@ export class PlansApiError extends Error {
 
 export type PlanExerciseInput = { name: string; supersetGroup: string | null; restSeconds: number };
 
-async function request(path: string, method: 'POST' | 'PUT', body: unknown): Promise<void> {
+async function request(path: string, method: 'POST' | 'PUT' | 'DELETE', body: unknown): Promise<void> {
   const response = await fetch(path, {
     method,
     credentials: 'same-origin',
@@ -33,6 +33,10 @@ export async function savePlan(input: { id?: number; name: string; description: 
     description: input.description || null,
     exercises: input.exercises,
   });
+}
+
+export async function deletePlan(id: number): Promise<void> {
+  await request('/api/plans', 'DELETE', { id });
 }
 
 export async function saveWeekPlan(weekPlan: Record<string, number | null>): Promise<void> {

@@ -29,3 +29,15 @@ export function rateLimit({ key, max, windowMs }) {
     await next();
   };
 }
+
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+
+/** Blanket limit on state-changing requests. Runs before `requireAuth`, so it
+ *  buckets by client address rather than user id. */
+export function limitWrites({ max, windowMs }) {
+  const limiter = rateLimit({ key: 'write', max, windowMs });
+  return async (c, next) => {
+    if (SAFE_METHODS.has(c.req.method)) return next();
+    return limiter(c, next);
+  };
+}

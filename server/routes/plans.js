@@ -82,14 +82,14 @@ app.delete('/plans', zValidator('json', PlanDeleteSchema), async (c) => {
   await db.transaction(async (tx) => {
     const [plan] = await tx.select({ id: plans.id }).from(plans)
       .where(and(eq(plans.id, id), eq(plans.userId, uid)));
-    if (!plan) return;
+    if (!plan) throw new HTTPException(404, { message: 'plan not found' });
 
     const clearPlan = (day) => sql`case when ${day} = ${id} then null else ${day} end`;
     await tx.update(weekPlan).set({
       sun: clearPlan(weekPlan.sun), mon: clearPlan(weekPlan.mon), tue: clearPlan(weekPlan.tue),
       wed: clearPlan(weekPlan.wed), thu: clearPlan(weekPlan.thu), fri: clearPlan(weekPlan.fri), sat: clearPlan(weekPlan.sat),
     }).where(eq(weekPlan.userId, uid));
-    await tx.delete(plans).where(eq(plans.id, id));
+    await tx.delete(plans).where(and(eq(plans.id, id), eq(plans.userId, uid)));
   });
   return c.json({ ok: true });
 });

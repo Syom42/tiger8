@@ -1,6 +1,8 @@
 // Hono app — mount every route here. Single source of truth.
 import { Hono } from 'hono';
 import { onError } from './middleware/error.js';
+import { verifyOrigin } from './middleware/csrf.js';
+import { limitWrites } from './middleware/rateLimit.js';
 
 import config       from './routes/config.js';
 import init         from './routes/init.js';
@@ -16,6 +18,9 @@ import supplements  from './routes/supplements.js';
 import coach        from './routes/coach.js';
 
 export const app = new Hono().basePath('/api');
+
+app.use('*', verifyOrigin);
+app.use('*', limitWrites({ max: 120, windowMs: 60_000 }));
 
 app.route('/', config);
 app.route('/', init);
