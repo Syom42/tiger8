@@ -46,7 +46,7 @@ await expectStatus('/api/plans', 200, {
     name: 'QA plan',
     description: 'Development smoke test plan',
     exercises: [
-      { name: 'Bench Press', supersetGroup: 'QA_PAIR' },
+      { name: 'Bench Press', supersetGroup: 'QA_PAIR', targetSets: 4, targetReps: 6 },
       { name: 'Barbell Row', supersetGroup: 'QA_PAIR' },
     ],
   }),
@@ -69,6 +69,9 @@ assert.equal(planBootstrapData.plans?.find(plan => plan.id === planId)?.exercise
 assert.equal(planBootstrapData.plans?.find(plan => plan.id === planId)?.exercises?.[0]?.rest_seconds, 120, 'new plan exercises did not default to two minutes of rest');
 assert.equal(planBootstrapData.plans?.find(plan => plan.id === planId)?.exercises?.[0]?.superset_group, 'QA_PAIR', 'saved plan superset group did not return through bootstrap data');
 assert.equal(planBootstrapData.plans?.find(plan => plan.id === planId)?.exercises?.[1]?.superset_group, 'QA_PAIR', 'paired plan exercise did not retain its superset group');
+assert.equal(planBootstrapData.plans?.find(plan => plan.id === planId)?.exercises?.[0]?.target_sets, 4, 'plan exercise target sets did not return through bootstrap data');
+assert.equal(planBootstrapData.plans?.find(plan => plan.id === planId)?.exercises?.[0]?.target_reps, 6, 'plan exercise target reps did not return through bootstrap data');
+assert.equal(planBootstrapData.plans?.find(plan => plan.id === planId)?.exercises?.[1]?.target_sets, 3, 'plan exercise targets did not fall back to three sets');
 
 await expectStatus('/api/workouts', 200, {
   method: 'POST',

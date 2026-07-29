@@ -1,40 +1,30 @@
 import { useEffect, useState } from "react";
 import {
-  Plus, Search, Check, X, CalendarDays, Dumbbell, Loader2, Edit3, Trash2, AlertTriangle, Undo2,
+  Plus, Search, Check, X, CalendarDays, Dumbbell, Loader2, Edit3, Trash2, AlertTriangle, Undo2, Timer, Layers,
 } from "lucide-react";
 import { cn, Card, SectionLabel, Btn, Badge, Dialog, EmptyState } from "../components/ui";
+import { PlanEditorDialog, PLAN_TEMPLATES, formatRest } from "../components/PlanEditor";
 import { type BootstrapData, type Plan } from "../../lib/api";
-import { PlansApiError, deletePlan, savePlan, saveWeekPlan } from "../../features/plans/api";
+import { PlansApiError, deletePlan, savePlan, saveWeekPlan, type PlanExerciseInput } from "../../features/plans/api";
 import { type WorkoutDraft } from "../lib/types";
 import { readStoredValue, clearStoredValue, WORKOUT_DRAFT_KEY } from "../lib/storage";
-
-const PLAN_TEMPLATES: Record<string, { label: string; exercises: string[] }> = {
-  push: { label: "Push", exercises: ["Bench Press", "Incline Bench Press", "Overhead Press", "Lateral Raise", "Tricep Pushdown", "Skull Crusher"] },
-  pull: { label: "Pull", exercises: ["Deadlift", "Pull-Up", "Barbell Row", "Lat Pulldown", "Barbell Curl", "Hammer Curl"] },
-  legs: { label: "Legs", exercises: ["Squat", "Romanian Deadlift", "Leg Press", "Leg Curl", "Leg Extension", "Calf Raise"] },
-  fullA: { label: "Full Body A", exercises: ["Squat", "Bench Press", "Barbell Row", "Overhead Press", "Plank"] },
-  fullB: { label: "Full Body B", exercises: ["Romanian Deadlift", "Incline Bench Press", "Lat Pulldown", "Dumbbell Shoulder Press", "Crunch"] },
-  upper: { label: "Upper Body", exercises: ["Bench Press", "Overhead Press", "Barbell Row", "Pull-Up", "Barbell Curl", "Tricep Pushdown"] },
-  lower: { label: "Lower Body", exercises: ["Squat", "Romanian Deadlift", "Leg Press", "Leg Curl", "Calf Raise"] },
-};
 
 export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onSaved: () => Promise<void> }) {
   const [search, setSearch] = useState("");
   const [active, setActive] = useState<number | null>(null);
-  const [showCreate, setShowCreate] = useState(false);
+  const [editor, setEditor] = useState<{ plan: Plan | null; templateKey: string | null } | null>(null);
   const [detailsPlan, setDetailsPlan] = useState<Plan | null>(null);
-  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [planToDelete, setPlanToDelete] = useState<Plan | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [recentlyDeleted, setRecentlyDeleted] = useState<{ plan: Plan; days: string[] } | null>(null);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [exerciseText, setExerciseText] = useState("");
-  const [defaultRestSeconds, setDefaultRestSeconds] = useState(120);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const plansById = new Map(data?.plans.map(plan => [plan.id, plan]) ?? []);
   const scheduledDays = (planId: number) => Object.values(data?.weekPlan ?? {}).filter(dayPlanId => dayPlanId === planId).length;
+  const planTotalSets = (plan: Plan) => plan.exercises.reduce((sum, exercise) => sum + (exercise.target_sets ?? 3), 0);
+  const planDuration = (plan: Plan) => Math.round(
+    plan.exercises.reduce((sum, exercise) => sum + (exercise.target_sets ?? 3) * ((exercise.rest_seconds ?? 120) + 45), 0) / 60,
+  );
   const filtered = (data?.plans ?? []).filter(plan =>
     plan.name.includes(search) || (plan.description ?? "").includes(search)
   );
@@ -43,13 +33,6 @@ export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onS
     ["ה", "thu"], ["ו", "fri"], ["ש", "sat"],
   ] as const;
 
-  const loadTemplate = (key: string) => {
-    const tpl = PLAN_TEMPLATES[key];
-    if (!tpl) return;
-    setName(tpl.label);
-    setExerciseText(tpl.exercises.join("\n"));
-  };
-
   useEffect(() => {
     if (!recentlyDeleted) return;
     const timer = setTimeout(() => setRecentlyDeleted(null), 12000);
@@ -57,56 +40,29 @@ export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onS
   }, [recentlyDeleted]);
 
   const openTemplate = (key: string) => {
-    setEditingPlan(null);
-    setDefaultRestSeconds(120);
-    loadTemplate(key);
-    setShowCreate(true);
+    setError(null);
+    setEditor({ plan: null, templateKey: key });
   };
 
   const openCreatePlan = () => {
-    setEditingPlan(null);
-    setName("");
-    setDescription("");
-    setExerciseText("");
-    setDefaultRestSeconds(120);
-    setShowCreate(true);
+    setError(null);
+    setEditor({ plan: null, templateKey: null });
   };
 
   const openEditPlan = (plan: Plan) => {
-    setEditingPlan(plan);
-    setName(plan.name);
-    setDescription(plan.description ?? "");
-    setDefaultRestSeconds(plan.exercises[0]?.rest_seconds ?? 120);
-    const renderedGroups = new Set<string>();
-    setExerciseText(plan.exercises.flatMap(exercise => {
-      const group = exercise.superset_group;
-      if (!group) return [exercise.exercise_name];
-      if (renderedGroups.has(group)) return [];
-      renderedGroups.add(group);
-      return [plan.exercises.filter(item => item.superset_group === group).map(item => item.exercise_name).join(" + ")];
-    }).join("\n"));
+    setError(null);
     setDetailsPlan(null);
-    setShowCreate(true);
+    setEditor({ plan, templateKey: null });
   };
 
-  const saveNewPlan = async () => {
-    const exercises = exerciseText.split(/\r?\n/).flatMap((line, lineIndex) => {
-      const names = line.split(/\s*\+\s*/).map(item => item.trim()).filter(Boolean);
-      const supersetGroup = names.length > 1 ? `pair-${lineIndex + 1}` : null;
-      return names.map(name => ({ name, supersetGroup, restSeconds: defaultRestSeconds }));
-    });
-    if (!name.trim() || saving) return;
+  const savePlanFromEditor = async (input: { name: string; description: string; exercises: PlanExerciseInput[] }) => {
+    if (!editor || saving) return;
     setSaving(true);
     setError(null);
     try {
-      await savePlan({ id: editingPlan?.id, name: name.trim(), description: description.trim(), exercises });
+      await savePlan({ id: editor.plan?.id, ...input });
       await onSaved();
-      setShowCreate(false);
-      setEditingPlan(null);
-      setName("");
-      setDescription("");
-      setExerciseText("");
-      setDefaultRestSeconds(120);
+      setEditor(null);
     } catch (requestError) {
       setError(requestError instanceof PlansApiError ? "לא ניתן היה לשמור את התוכנית. נסה שוב." : "אירעה שגיאה בשמירת התוכנית.");
     } finally {
@@ -153,6 +109,8 @@ export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onS
           name: exercise.exercise_name,
           supersetGroup: exercise.superset_group ?? null,
           restSeconds: exercise.rest_seconds ?? 120,
+          targetSets: exercise.target_sets ?? 3,
+          targetReps: exercise.target_reps ?? 10,
         })),
       });
       if (days.length) {
@@ -254,8 +212,12 @@ export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onS
                   {scheduledDays(plan.id)} ימים/שבוע
                 </span>
                 <span className="flex items-center gap-1">
-                  <Dumbbell className="w-3 h-3" />
-                  תוכנית אימון
+                  <Layers className="w-3 h-3" />
+                  {planTotalSets(plan)} סטים
+                </span>
+                <span className="flex items-center gap-1">
+                  <Timer className="w-3 h-3" />
+                  ~{planDuration(plan)} דק׳
                 </span>
               </div>
               <div className="mt-3 pt-3 border-t border-border flex gap-2">
@@ -311,44 +273,17 @@ export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onS
       </div>
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      {showCreate && (
-        <Dialog labelId="create-plan-title" onClose={() => { if (!saving) setShowCreate(false); }} className="max-w-md p-5 space-y-4">
-            <div className="flex items-center justify-between gap-3">
-              <h2 id="create-plan-title" className="text-lg font-semibold">{editingPlan ? "עריכת תוכנית" : "תוכנית חדשה"}</h2>
-              <button type="button" onClick={() => setShowCreate(false)} className="text-muted-foreground hover:text-foreground" aria-label="סגור">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-2">טען מתבנית</p>
-              <div className="flex flex-wrap gap-1.5">
-                {Object.entries(PLAN_TEMPLATES).map(([key, tpl]) => (
-                  <button key={key} type="button" onClick={() => loadTemplate(key)} className="px-2.5 py-1 rounded border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">
-                    {tpl.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <label className="sr-only" htmlFor="plan-name">שם התוכנית</label>
-            <input id="plan-name" value={name} onChange={event => setName(event.target.value)} placeholder="שם התוכנית" className="w-full h-10 bg-input-background border border-border rounded px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-            <label className="sr-only" htmlFor="plan-description">תיאור התוכנית</label>
-            <input id="plan-description" value={description} onChange={event => setDescription(event.target.value)} placeholder="תיאור קצר (אופציונלי)" className="w-full h-10 bg-input-background border border-border rounded px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-            <label className="block text-sm font-medium" htmlFor="plan-rest-time">
-              זמן מנוחה בין סטים (שניות)
-              <input id="plan-rest-time" dir="ltr" type="number" min="15" max="900" step="15" value={defaultRestSeconds} onChange={event => setDefaultRestSeconds(Math.min(900, Math.max(15, Number(event.target.value) || 120)))} className="mt-1 w-full h-10 bg-input-background border border-border rounded px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-            </label>
-            <p className="-mt-2 text-xs text-muted-foreground">ברירת המחדל היא 120 שניות (2:00). אפשר לשנות לכל תרגיל במהלך האימון.</p>
-            <label className="sr-only" htmlFor="plan-exercises">תרגילי התוכנית</label>
-            <textarea id="plan-exercises" value={exerciseText} onChange={event => setExerciseText(event.target.value)} placeholder={"תרגיל אחד בכל שורה\nלדוגמה: Bench Press\nלסופרסט: Bench Press + Barbell Row"} rows={5} className="w-full bg-input-background border border-border rounded p-3 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-ring" />
-            <p className="text-xs text-muted-foreground">חבר שני תרגילים עם + באותה שורה כדי ליצור סופרסט.</p>
-            <div className="flex gap-2">
-              <Btn variant="primary" className="flex-1" onClick={() => void saveNewPlan()} disabled={!name.trim() || saving}>
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                {editingPlan ? "שמור שינויים" : "שמור תוכנית"}
-              </Btn>
-              <Btn variant="outline" onClick={() => setShowCreate(false)} disabled={saving}>ביטול</Btn>
-            </div>
-        </Dialog>
+      {editor && (
+        <PlanEditorDialog
+          key={editor.plan?.id ?? editor.templateKey ?? "new"}
+          plan={editor.plan}
+          templateKey={editor.templateKey}
+          library={data?.exercises ?? []}
+          saving={saving}
+          error={error}
+          onClose={() => setEditor(null)}
+          onSave={input => void savePlanFromEditor(input)}
+        />
       )}
       {detailsPlan && (
         <Dialog labelId="plan-details-title" onClose={() => setDetailsPlan(null)} className="max-w-md p-5 space-y-4">
@@ -364,15 +299,30 @@ export function PlansScreen({ data, onSaved }: { data: BootstrapData | null; onS
             </div>
           </div>
           <p className="text-sm text-muted-foreground">{detailsPlan.description || "ללא תיאור"}</p>
-          <ul className="space-y-2 text-sm">
+          <ul className="space-y-2 text-sm max-h-[50vh] overflow-y-auto">
             {detailsPlan.exercises.length
-              ? detailsPlan.exercises.map(exercise => <li key={exercise.exercise_name} className="flex items-center justify-between"><span>{exercise.exercise_name}</span><span className="text-xs text-muted-foreground">{exercise.superset_group ? "סופרסט" : `${exercise.rest_seconds ?? 120} שנ׳ מנוחה`}</span></li>)
+              ? detailsPlan.exercises.map((exercise, index) => (
+                <li key={`${exercise.exercise_name}-${index}`} className="flex items-center justify-between gap-3 rounded border border-border p-2.5">
+                  <span className="min-w-0 flex-1 truncate">
+                    {exercise.exercise_name}
+                    {exercise.superset_group && <span className="text-xs text-primary mr-2">סופרסט</span>}
+                  </span>
+                  <span className="flex items-center gap-3 text-xs text-muted-foreground flex-shrink-0 font-mono tabular-nums">
+                    <span className="flex items-center gap-1"><Layers className="w-3 h-3" />{exercise.target_sets ?? 3}×{exercise.target_reps ?? 10}</span>
+                    <span className="flex items-center gap-1"><Timer className="w-3 h-3" />{formatRest(exercise.rest_seconds ?? 120)}</span>
+                  </span>
+                </li>
+              ))
               : <li className="text-muted-foreground">אין תרגילים בתוכנית.</li>}
           </ul>
-          <div className="pt-3 border-t border-border">
+          <div className="pt-3 border-t border-border flex gap-2">
+            <Btn variant="primary" size="sm" className="flex-1" onClick={() => openEditPlan(detailsPlan)}>
+              <Edit3 className="w-3.5 h-3.5" />
+              ערוך תוכנית
+            </Btn>
             <Btn variant="outline" size="sm" onClick={() => { setPlanToDelete(detailsPlan); setDeleteError(null); setDetailsPlan(null); }} className="text-destructive hover:bg-destructive/10">
               <Trash2 className="w-3.5 h-3.5" />
-              מחק תוכנית
+              מחק
             </Btn>
           </div>
         </Dialog>

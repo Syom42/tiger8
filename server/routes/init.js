@@ -154,7 +154,8 @@ app.get('/init', requireAuth, async (c) => {
       if (!byPlan.has(e.planId)) byPlan.set(e.planId, []);
       byPlan.get(e.planId).push({
         id: e.id, exercise_name: e.exerciseName,
-        rest_seconds: e.restSeconds, superset_group: e.supersetGroup, sort_order: e.sortOrder,
+        rest_seconds: e.restSeconds, target_sets: e.targetSets, target_reps: e.targetReps,
+        superset_group: e.supersetGroup, sort_order: e.sortOrder,
       });
     }
     plansWithExercises = planRows.map(p => ({

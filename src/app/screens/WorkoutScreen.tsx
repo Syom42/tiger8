@@ -79,6 +79,9 @@ export function WorkoutScreen({
       : Number.isFinite(previousWeight) && previousWeight > 0
       ? previousWeight
       : pr > 0 ? Math.round((pr * 0.7) / 2.5) * 2.5 : 0;
+    // The plan's targets win over history — they are an explicit user choice.
+    const targetSets = Math.min(20, Math.max(1, exercise.target_sets ?? 3));
+    const targetReps = Math.min(100, Math.max(1, exercise.target_reps ?? (previousReps || 8)));
 
     return {
       id: index + 1,
@@ -86,11 +89,11 @@ export function WorkoutScreen({
       restSeconds: exercise.rest_seconds ?? 120,
       supersetGroup: exercise.superset_group ?? null,
       pr,
-      lastSession: previousWeight > 0 ? `${previousWeight} ק״ג × ${previousReps || 8}` : "אין נתון קודם",
-      progressionHint: previousWeight > 0 ? `יעד מוצע: ${suggestedWeight} ק״ג × ${previousReps || 8}${suggestedWeight > previousWeight ? " (+2.5 ק״ג)" : ""}` : null,
-      sets: Array.from({ length: 3 }, (_, setIndex) => {
+      lastSession: previousWeight > 0 ? `${previousWeight} ק״ג × ${previousReps || targetReps}` : "אין נתון קודם",
+      progressionHint: previousWeight > 0 ? `יעד מוצע: ${suggestedWeight} ק״ג × ${targetReps}${suggestedWeight > previousWeight ? " (+2.5 ק״ג)" : ""}` : null,
+      sets: Array.from({ length: targetSets }, (_, setIndex) => {
         const previous = previousSets[setIndex] ?? previousSet;
-        return { weight: Number(previous?.weight) || suggestedWeight, reps: Number(previous?.reps) || previousReps || 8, done: false, rpe: null, rir: null, isWarmup: false };
+        return { weight: Number(previous?.weight) || suggestedWeight, reps: targetReps, done: false, rpe: null, rir: null, isWarmup: false };
       }),
     };
   }));

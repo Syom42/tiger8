@@ -81,6 +81,8 @@ create table if not exists plan_exercises (
   plan_id       bigint not null references plans(id) on delete cascade,
   exercise_name text not null,
   rest_seconds  int default 120,
+  target_sets   int default 3,
+  target_reps   int default 10,
   superset_group text,
   sort_order    int not null default 0
 );

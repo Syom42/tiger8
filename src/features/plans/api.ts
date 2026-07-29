@@ -6,7 +6,13 @@ export class PlansApiError extends Error {
   }
 }
 
-export type PlanExerciseInput = { name: string; supersetGroup: string | null; restSeconds: number };
+export type PlanExerciseInput = {
+  name: string;
+  supersetGroup: string | null;
+  restSeconds: number;
+  targetSets?: number;
+  targetReps?: number;
+};
 
 async function request(path: string, method: 'POST' | 'PUT' | 'DELETE', body: unknown): Promise<void> {
   const response = await fetch(path, {

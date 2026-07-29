@@ -27,8 +27,19 @@ export type Plan = {
   exercises: Array<{
     exercise_name: string;
     rest_seconds: number | null;
+    target_sets?: number | null;
+    target_reps?: number | null;
     superset_group?: string | null;
   }>;
+};
+
+export type ExerciseLibraryItem = {
+  id: string;
+  user_id: number | null;
+  name: string;
+  muscle: string;
+  description: string | null;
+  is_custom: boolean;
 };
 
 export type BootstrapData = {
@@ -40,6 +51,7 @@ export type BootstrapData = {
     goal?: string | null;
     joined_at?: string | null;
   };
+  exercises: ExerciseLibraryItem[];
   workouts: Workout[];
   plans: Plan[];
   weekPlan: Record<string, number | null>;

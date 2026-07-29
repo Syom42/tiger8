@@ -73,6 +73,8 @@ export const planExercises = pgTable('plan_exercises', {
   planId:       bigint('plan_id', { mode: 'number' }).notNull().references(() => plans.id, { onDelete: 'cascade' }),
   exerciseName: text('exercise_name').notNull(),
   restSeconds:  integer('rest_seconds').default(120),
+  targetSets:   integer('target_sets').default(3),
+  targetReps:   integer('target_reps').default(10),
   supersetGroup: text('superset_group'),
   sortOrder:    integer('sort_order').notNull().default(0),
 });
