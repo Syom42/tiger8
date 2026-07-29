@@ -3,11 +3,13 @@
 import { z } from 'zod';
 
 const envSchema = z.object({
-  // Database (provided automatically by Vercel/Neon integration)
-  POSTGRES_URL: z.string().min(1).optional().default(''),
+  // Database (provided automatically by Vercel/Neon integration).
+  // Deliberately not `.min(1)` — an empty value must fall through to the
+  // warning below rather than throwing and 400-ing every request.
+  POSTGRES_URL: z.string().optional().default(''),
 
   // Session signing
-  JWT_SECRET: z.string().min(1).optional().default(''),
+  JWT_SECRET: z.string().optional().default(''),
 
   // Stable public base URL — used to build the Google OAuth redirect_uri.
   APP_URL: z.string().optional().default('http://localhost:3000'),

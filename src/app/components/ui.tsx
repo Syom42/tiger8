@@ -152,8 +152,8 @@ export function Dialog({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center p-4">
-      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={labelId} tabIndex={-1} onKeyDown={trapFocus} className={cn("w-full bg-card border border-border rounded-lg", className)}>
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center p-0 pb-[env(safe-area-inset-bottom)] sm:p-4 sm:pb-4">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={labelId} tabIndex={-1} onKeyDown={trapFocus} className={cn("w-full bg-card border border-border rounded-t-2xl sm:rounded-lg", className)}>
         {children}
       </div>
     </div>

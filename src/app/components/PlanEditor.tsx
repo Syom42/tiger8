@@ -179,7 +179,7 @@ export function toPlanExercises(items: DraftExercise[]): PlanExerciseInput[] {
 }
 
 function Stepper({
-  label, icon: Icon, value, min, max, step, format, onChange,
+  label, icon: Icon, value, min, max, step, format, onChange, className,
 }: {
   label: string;
   icon: typeof Timer;
@@ -189,24 +189,25 @@ function Stepper({
   step: number;
   format?: (value: number) => string;
   onChange: (next: number) => void;
+  className?: string;
 }) {
   return (
-    <div className="min-w-0 flex-1">
-      <p className="text-[10px] text-muted-foreground mb-1 flex items-center gap-1 truncate">
+    <div className={cn("min-w-0", className)}>
+      <p className="text-[11px] text-muted-foreground mb-1 flex items-center gap-1 truncate">
         <Icon className="w-3 h-3 flex-shrink-0" />
         {label}
       </p>
-      <div className="flex items-center gap-1 rounded border border-border bg-input-background p-0.5">
+      <div className="flex items-center gap-1 rounded-md border border-border bg-input-background p-1">
         <button
           type="button"
           aria-label={`הפחת ${label}`}
           disabled={value <= min}
           onClick={() => onChange(clamp(value - step, min, max))}
-          className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0 hover:bg-accent active:scale-95 transition disabled:opacity-30"
+          className="w-8 h-8 rounded flex items-center justify-center flex-shrink-0 hover:bg-accent active:scale-95 transition disabled:opacity-30"
         >
-          <Minus className="w-3 h-3" />
+          <Minus className="w-3.5 h-3.5" />
         </button>
-        <span className="flex-1 text-center text-sm font-mono tabular-nums" aria-live="off">
+        <span className="flex-1 min-w-0 text-center text-sm font-mono tabular-nums" aria-live="off">
           {format ? format(value) : value}
         </span>
         <button
@@ -214,9 +215,9 @@ function Stepper({
           aria-label={`הגדל ${label}`}
           disabled={value >= max}
           onClick={() => onChange(clamp(value + step, min, max))}
-          className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0 hover:bg-accent active:scale-95 transition disabled:opacity-30"
+          className="w-8 h-8 rounded flex items-center justify-center flex-shrink-0 hover:bg-accent active:scale-95 transition disabled:opacity-30"
         >
-          <Plus className="w-3 h-3" />
+          <Plus className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>
@@ -259,7 +260,7 @@ function ExercisePicker({
 
   return (
     <>
-      <div className="p-4 border-b border-border space-y-3 flex-shrink-0">
+      <div className="p-3 sm:p-4 border-b border-border space-y-3 flex-shrink-0">
         <div className="flex items-center justify-between gap-3">
           <button type="button" onClick={onDone} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground" aria-label="חזרה לעריכת התוכנית">
             <ChevronRight className="w-4 h-4" />
@@ -275,7 +276,7 @@ function ExercisePicker({
             value={query}
             onChange={event => setQuery(event.target.value)}
             placeholder="חפש תרגיל — למשל לחיצת חזה או Squat"
-            className="w-full h-10 bg-input-background border border-border rounded pr-9 pl-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full h-11 bg-input-background border border-border rounded pr-9 pl-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
         <div className="flex gap-1.5 overflow-x-auto pb-1 -mb-1">
@@ -283,7 +284,7 @@ function ExercisePicker({
             type="button"
             onClick={() => setMuscle(null)}
             className={cn(
-              "px-2.5 py-1 rounded-full border text-xs font-medium whitespace-nowrap transition-colors",
+              "px-3 py-1.5 rounded-full border text-xs font-medium whitespace-nowrap transition-colors",
               muscle === null ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground",
             )}
           >
@@ -295,7 +296,7 @@ function ExercisePicker({
               type="button"
               onClick={() => setMuscle(muscle === key ? null : key)}
               className={cn(
-                "px-2.5 py-1 rounded-full border text-xs font-medium whitespace-nowrap transition-colors",
+                "px-3 py-1.5 rounded-full border text-xs font-medium whitespace-nowrap transition-colors",
                 muscle === key ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground",
               )}
             >
@@ -323,20 +324,23 @@ function ExercisePicker({
                   type="button"
                   onClick={() => onAdd(item)}
                   className={cn(
-                    "w-full flex items-center gap-3 rounded border p-2.5 text-right transition-colors",
+                    "w-full flex items-center gap-3 rounded border p-3 text-right transition-colors",
                     added ? "border-primary/40 bg-primary/5" : "border-border hover:border-primary/40 hover:bg-accent/50",
                   )}
                 >
-                  <span className={cn("w-7 h-7 rounded flex items-center justify-center flex-shrink-0", added ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground")}>
-                    {added ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                  <span className={cn("w-8 h-8 rounded flex items-center justify-center flex-shrink-0", added ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground")}>
+                    {added ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                   </span>
                   <span className="flex-1 min-w-0">
-                    <span className="block text-sm font-medium truncate">{item.name}</span>
+                    <span className="block text-sm font-medium leading-snug break-words">{item.name}</span>
                     {HEBREW_ALIASES[item.name] && (
                       <span className="block text-xs text-muted-foreground truncate">{HEBREW_ALIASES[item.name]}</span>
                     )}
                   </span>
-                  <Badge variant="muted">{muscleLabel(item.muscle)}</Badge>
+                  {/* Redundant on phones — the list is already grouped by muscle. */}
+                  <span className="hidden sm:block flex-shrink-0">
+                    <Badge variant="muted">{muscleLabel(item.muscle)}</Badge>
+                  </span>
                 </button>
               );
             })}
@@ -346,20 +350,20 @@ function ExercisePicker({
           <button
             type="button"
             onClick={() => onAdd({ id: `custom_${term}`, name: query.trim(), muscle: "custom" })}
-            className="w-full flex items-center gap-3 rounded border border-dashed border-border p-2.5 text-right hover:border-primary/50 transition-colors"
+            className="w-full flex items-center gap-3 rounded border border-dashed border-border p-3 text-right hover:border-primary/50 transition-colors"
           >
-            <span className="w-7 h-7 rounded bg-muted flex items-center justify-center flex-shrink-0">
-              <Sparkles className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="w-8 h-8 rounded bg-muted flex items-center justify-center flex-shrink-0">
+              <Sparkles className="w-4 h-4 text-muted-foreground" />
             </span>
-            <span className="flex-1 text-sm">
+            <span className="flex-1 min-w-0 text-sm break-words">
               הוסף תרגיל משלך: <span className="font-semibold">{query.trim()}</span>
             </span>
           </button>
         )}
       </div>
 
-      <div className="p-4 border-t border-border flex-shrink-0">
-        <Btn variant="primary" fullWidth onClick={onDone}>
+      <div className="p-3 sm:p-4 border-t border-border flex-shrink-0">
+        <Btn variant="primary" size="lg" fullWidth onClick={onDone}>
           <Check className="w-4 h-4" />
           סיימתי — {chosenNames.length} תרגילים בתוכנית
         </Btn>
@@ -449,7 +453,7 @@ export function PlanEditorDialog({
     <Dialog
       labelId="plan-editor-title"
       onClose={() => { if (!saving) onClose(); }}
-      className="max-w-2xl max-h-[92vh] sm:max-h-[85vh] flex flex-col overflow-hidden p-0"
+      className="max-w-2xl max-h-[90dvh] sm:max-h-[85dvh] flex flex-col overflow-hidden p-0"
     >
       {picking ? (
         <ExercisePicker
@@ -460,14 +464,14 @@ export function PlanEditorDialog({
         />
       ) : (
         <>
-          <div className="p-4 border-b border-border flex items-center justify-between gap-3 flex-shrink-0">
+          <div className="p-3 sm:p-4 border-b border-border flex items-center justify-between gap-3 flex-shrink-0">
             <h2 id="plan-editor-title" className="text-lg font-semibold">{plan ? "עריכת תוכנית" : "בניית תוכנית"}</h2>
-            <button type="button" onClick={onClose} disabled={saving} className="text-muted-foreground hover:text-foreground disabled:opacity-50" aria-label="סגור">
+            <button type="button" onClick={onClose} disabled={saving} className="w-9 h-9 -m-1 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent disabled:opacity-50" aria-label="סגור">
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4">
             <div className="space-y-2">
               <label className="sr-only" htmlFor="plan-name">שם התוכנית</label>
               <input
@@ -503,7 +507,7 @@ export function PlanEditorDialog({
                         key={key}
                         type="button"
                         onClick={() => loadTemplate(key)}
-                        className="px-2.5 py-1 rounded border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
+                        className="px-3 py-1.5 rounded border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
                       >
                         {tpl.label}
                       </button>
@@ -530,7 +534,7 @@ export function PlanEditorDialog({
                           onClick={() => updateItem(item.uid, { linkedToPrev: !item.linkedToPrev })}
                           aria-pressed={item.linkedToPrev}
                           className={cn(
-                            "inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-medium transition-colors",
+                            "inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-medium transition-colors",
                             item.linkedToPrev
                               ? "border-primary/40 bg-primary/10 text-primary"
                               : "border-dashed border-border text-muted-foreground hover:text-foreground hover:border-primary/40",
@@ -551,7 +555,7 @@ export function PlanEditorDialog({
                           {index + 1}
                         </span>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold truncate">{item.name}</p>
+                          <p className="text-sm font-semibold leading-snug break-words">{item.name}</p>
                           <p className="text-xs text-muted-foreground truncate">
                             {HEBREW_ALIASES[item.name] ?? (item.muscle && MUSCLE_LABELS[item.muscle]) ?? "תרגיל מותאם"}
                           </p>
@@ -562,41 +566,42 @@ export function PlanEditorDialog({
                             aria-label={`העבר את ${item.name} למעלה`}
                             disabled={index === 0}
                             onClick={() => moveItem(index, -1)}
-                            className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30"
+                            className="w-8 h-8 rounded flex items-center justify-center text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30"
                           >
-                            <ArrowUp className="w-3.5 h-3.5" />
+                            <ArrowUp className="w-4 h-4" />
                           </button>
                           <button
                             type="button"
                             aria-label={`העבר את ${item.name} למטה`}
                             disabled={index === items.length - 1}
                             onClick={() => moveItem(index, 1)}
-                            className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30"
+                            className="w-8 h-8 rounded flex items-center justify-center text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30"
                           >
-                            <ArrowDown className="w-3.5 h-3.5" />
+                            <ArrowDown className="w-4 h-4" />
                           </button>
                           <button
                             type="button"
                             aria-label={`הסר את ${item.name}`}
                             onClick={() => removeItem(item.uid)}
-                            className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                            className="w-8 h-8 rounded flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
 
-                      <div className="flex items-end gap-2">
-                        <Stepper label="סטים" icon={Layers} value={item.sets} min={1} max={12} step={1} onChange={sets => updateItem(item.uid, { sets })} />
-                        <Stepper label="חזרות" icon={Repeat} value={item.reps} min={1} max={50} step={1} onChange={reps => updateItem(item.uid, { reps })} />
-                        <Stepper label="מנוחה" icon={Timer} value={item.rest} min={0} max={600} step={15} format={formatRest} onChange={rest => updateItem(item.uid, { rest })} />
+                      {/* Two-up on phones so the rest timer keeps a readable width. */}
+                      <div className="flex flex-wrap items-end gap-2">
+                        <Stepper className="basis-[calc(50%-0.25rem)] sm:basis-0 sm:flex-1" label="סטים" icon={Layers} value={item.sets} min={1} max={12} step={1} onChange={sets => updateItem(item.uid, { sets })} />
+                        <Stepper className="basis-[calc(50%-0.25rem)] sm:basis-0 sm:flex-1" label="חזרות" icon={Repeat} value={item.reps} min={1} max={50} step={1} onChange={reps => updateItem(item.uid, { reps })} />
+                        <Stepper className="basis-full sm:basis-0 sm:flex-1" label="מנוחה" icon={Timer} value={item.rest} min={0} max={600} step={15} format={formatRest} onChange={rest => updateItem(item.uid, { rest })} />
                       </div>
 
                       {items.length > 1 && (
                         <button
                           type="button"
                           onClick={() => applyToAll(item)}
-                          className="mt-2 text-[11px] text-muted-foreground hover:text-primary transition-colors"
+                          className="mt-2.5 w-full rounded-md border border-dashed border-border py-1.5 text-[11px] text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors"
                         >
                           החל את ההגדרות האלה על כל התרגילים
                         </button>
@@ -610,9 +615,9 @@ export function PlanEditorDialog({
             {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
           </div>
 
-          <div className="p-4 border-t border-border flex-shrink-0 space-y-3">
+          <div className="p-3 sm:p-4 border-t border-border flex-shrink-0 space-y-3">
             {items.length > 0 && (
-              <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+              <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1"><Layers className="w-3 h-3" />{totalSets} סטים</span>
                 <span className="flex items-center gap-1"><Timer className="w-3 h-3" />~{estimatedMinutes} דק׳</span>
                 <span className="flex items-center gap-1"><Dumbbell className="w-3 h-3" />{items.length} תרגילים</span>
@@ -621,6 +626,7 @@ export function PlanEditorDialog({
             <div className="flex gap-2">
               <Btn
                 variant="primary"
+                size="lg"
                 className="flex-1"
                 disabled={!canSave}
                 onClick={() => onSave({ name: name.trim(), description: description.trim(), exercises: toPlanExercises(items) })}
@@ -628,7 +634,7 @@ export function PlanEditorDialog({
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                 {plan ? "שמור שינויים" : "שמור תוכנית"}
               </Btn>
-              <Btn variant="outline" onClick={onClose} disabled={saving}>ביטול</Btn>
+              <Btn variant="outline" size="lg" onClick={onClose} disabled={saving}>ביטול</Btn>
             </div>
           </div>
         </>
